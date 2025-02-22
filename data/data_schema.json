@@ -1,0 +1,40 @@
+{
+    "trucks": {
+        "truck_id": "integer",
+        "capacity": "float",
+        "speed": "float",
+        "fuel_consumption_rate": "float",
+        "current_load": "float",
+        "status": "string",
+        "current_location": {
+            "latitude": "float",
+            "longitude": "float"
+        },
+        "assigned_shovel": "integer",
+        "maintenance_status": "string"
+    },
+    "shovels": {
+        "shovel_id": "integer",
+        "loading_rate": "float",
+        "location": {
+            "latitude": "float",
+            "longitude": "float"
+        },
+        "status": "string",
+        "current_queue": "integer"
+    },
+    "routes": {
+        "route_id": "integer",
+        "truck_id": "integer",
+        "start_point": {
+            "latitude": "float",
+            "longitude": "float"
+        },
+        "end_point": {
+            "latitude": "float",
+            "longitude": "float"
+        },
+        "distance": "float",
+        "estimated_time": "float"
+    }
+}
