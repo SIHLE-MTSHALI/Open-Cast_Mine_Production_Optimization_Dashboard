@@ -67,12 +67,20 @@ class MineOptimizer:
         travel_events = logs_df[logs_df['event'].isin(['traveling_to_shovel', 'traveling_to_dump'])]
         total_time = travel_events['timestamp'].max() - travel_events['timestamp'].min()
         
-        # Assuming average speed and fuel consumption
-        avg_speed = self.simulation.trucks_df['speed'].mean()
-        avg_fuel_rate = self.simulation.trucks_df['fuel_consumption_rate'].mean()
+        # Calculate fuel consumption based on truck type and load state
+        total_fuel_cost = 0
+        for _, truck in self.simulation.trucks_df.iterrows():
+            loaded_time = len(logs_df[(logs_df['truck_id'] == truck['truck_id']) & 
+                                    (logs_df['event'] == 'traveling_to_dump')]) * total_time / len(travel_events)
+            empty_time = len(logs_df[(logs_df['truck_id'] == truck['truck_id']) & 
+                                   (logs_df['event'] == 'traveling_to_shovel')]) * total_time / len(travel_events)
+            
+            # Calculate fuel consumption considering environmental factors
+            loaded_fuel = loaded_time * truck['fuel_consumption_loaded']
+            empty_fuel = empty_time * truck['fuel_consumption_empty']
+            total_fuel_cost += (loaded_fuel + empty_fuel) * self.fuel_price
         
-        total_fuel = total_time * avg_speed * avg_fuel_rate
-        return total_fuel * self.fuel_price
+        return total_fuel_cost
     
     def calculate_idle_cost(self, logs_df):
         """Calculate total idle cost from simulation logs."""
