@@ -7,15 +7,16 @@ from simulation import MineSimulation
 import simpy
 
 class MineOptimizer:
-    def __init__(self, num_trucks=10, num_shovels=3):
+    def __init__(self, num_trucks=10, num_shovels=3, max_trucks_per_shovel=4):
         self.num_trucks = num_trucks
         self.num_shovels = num_shovels
-        self.fuel_price = 1.5  # $/L
-        self.idle_cost_per_min = 2.0  # $/min
+        self.max_trucks_per_shovel = max_trucks_per_shovel
+        self.fuel_price = 25.0  # ZAR/L
+        self.idle_cost_per_min = 35.0  # ZAR/min
         
         # Initialize simulation
         self.env = simpy.Environment()
-        self.simulation = MineSimulation(self.env, num_trucks, num_shovels)
+        self.simulation = MineSimulation(self.env, num_trucks, num_shovels, max_trucks_per_shovel)
         
         # Set up genetic algorithm
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -41,6 +42,13 @@ class MineOptimizer:
     
     def evaluate_solution(self, individual):
         """Evaluate a solution using simulation results."""
+        # Check if solution violates max trucks per shovel constraint
+        shovel_counts = {i: 0 for i in range(1, self.num_shovels + 1)}
+        for shovel_id in individual:
+            shovel_counts[shovel_id] += 1
+            if shovel_counts[shovel_id] > self.max_trucks_per_shovel:
+                return (float('inf'),)  # Return high cost for invalid solutions
+        
         # Update truck-shovel assignments
         for i, shovel_id in enumerate(individual):
             self.simulation.trucks_df.at[i, 'assigned_shovel'] = shovel_id

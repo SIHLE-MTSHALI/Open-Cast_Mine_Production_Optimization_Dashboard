@@ -31,6 +31,11 @@ app.layout = html.Div([
             dcc.Slider(id='num-shovels-slider', min=2, max=6, step=1, value=3,
                       marks={i: str(i) for i in range(2, 7)})
         ]),
+        html.Div([
+            html.Label('Max Trucks per Shovel:'),
+            dcc.Slider(id='max-trucks-per-shovel-slider', min=2, max=6, step=1, value=4,
+                      marks={i: str(i) for i in range(2, 7)})
+        ]),
         html.Button('Run Optimization', id='optimize-button', n_clicks=0)
     ], style={'padding': '20px', 'backgroundColor': '#f8f9fa'}),
     
@@ -84,12 +89,13 @@ app.layout = html.Div([
     [Input('interval-component', 'n_intervals'),
      Input('optimize-button', 'n_clicks')],
     [State('num-trucks-slider', 'value'),
-     State('num-shovels-slider', 'value')]
+     State('num-shovels-slider', 'value'),
+     State('max-trucks-per-shovel-slider', 'value')]
 )
-def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels):
+def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels, max_trucks_per_shovel):
     # Initialize simulation environment
     env = simpy.Environment()
-    sim = MineSimulation(env, num_trucks, num_shovels)
+    sim = MineSimulation(env, num_trucks, num_shovels, max_trucks_per_shovel)
     
     # Run simulation for a short period
     logs_df = sim.run(simulation_time=1)
@@ -123,7 +129,7 @@ def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels):
     fig.update_layout(
         mapbox=dict(
             style='open-street-map',
-            center=dict(lat=-25.7461, lon=28.2314),
+            center=dict(lat=-26.2041, lon=27.8695),
             zoom=12
         ),
         margin=dict(l=0, r=0, t=0, b=0)
@@ -134,7 +140,7 @@ def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels):
     fuel_cost_per_ton = sim.trucks_df['fuel_consumption_rate'].mean() * 1.5  # $1.5 per liter
     utilization = sim.trucks_df['current_load'].mean() / sim.trucks_df['capacity'].mean() * 100
     
-    return fig, f"{idle_time_pct:.1f}%", f"${fuel_cost_per_ton:.2f}/ton", f"{utilization:.1f}%"
+    return fig, f"{idle_time_pct:.1f}%", f"R{fuel_cost_per_ton:.2f}/ton", f"{utilization:.1f}%"
 
 def main():
     app.run_server(debug=True)

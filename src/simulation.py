@@ -5,15 +5,16 @@ from datetime import datetime, timedelta
 from data_generator import generate_truck_data, generate_shovel_data
 
 class MineSimulation:
-    def __init__(self, env, num_trucks=10, num_shovels=3):
+    def __init__(self, env, num_trucks=10, num_shovels=3, max_trucks_per_shovel=4):
         self.env = env
         self.trucks_df = generate_truck_data(num_trucks)
         self.shovels_df = generate_shovel_data(num_shovels)
+        self.max_trucks_per_shovel = max_trucks_per_shovel
         
         # Create SimPy resources for shovels
         self.shovels = {}
         for _, shovel in self.shovels_df.iterrows():
-            self.shovels[shovel['shovel_id']] = simpy.Resource(env, capacity=4)  # Max 4 trucks per shovel
+            self.shovels[shovel['shovel_id']] = simpy.Resource(env, capacity=max_trucks_per_shovel)
         
         # Initialize logs
         self.logs = []

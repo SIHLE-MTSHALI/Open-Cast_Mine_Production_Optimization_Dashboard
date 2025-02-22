@@ -6,10 +6,10 @@ import json
 fake = Faker()
 
 def generate_gps_coordinates():
-    # Generating coordinates within a reasonable mining area
-    # Centered around -25.7461° S, 28.2314° E (example mining region)
-    base_lat = -25.7461
-    base_lon = 28.2314
+    # Generating coordinates within the Witwatersrand Basin mining region
+    # Centered around -26.2041° S, 27.8695° E (Witwatersrand Basin)
+    base_lat = -26.2041
+    base_lon = 27.8695
     
     lat = base_lat + np.random.uniform(-0.05, 0.05)
     lon = base_lon + np.random.uniform(-0.05, 0.05)
