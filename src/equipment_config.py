@@ -43,6 +43,41 @@ LOADER_TYPES: Dict[str, LoaderConfig] = {
         maintenance_interval=250,
         fuel_consumption=45
     ),
+    'excavator_870': LoaderConfig(
+        type_name='CAT 870',
+        bucket_capacity=7.5,
+        cycle_time=35,
+        maintenance_interval=300,
+        fuel_consumption=52
+    ),
+    'excavator_2600': LoaderConfig(
+        type_name='CAT 2600',
+        bucket_capacity=15.0,
+        cycle_time=40,
+        maintenance_interval=350,
+        fuel_consumption=85
+    ),
+    'face_shovel_2500': LoaderConfig(
+        type_name='CAT 2500',
+        bucket_capacity=13.0,
+        cycle_time=38,
+        maintenance_interval=300,
+        fuel_consumption=75
+    ),
+    'face_shovel_2600': LoaderConfig(
+        type_name='CAT 2600',
+        bucket_capacity=16.0,
+        cycle_time=42,
+        maintenance_interval=350,
+        fuel_consumption=90
+    ),
+    'face_shovel_3600': LoaderConfig(
+        type_name='CAT 3600',
+        bucket_capacity=20.0,
+        cycle_time=45,
+        maintenance_interval=400,
+        fuel_consumption=110
+    ),
     'wheel_loader_small': LoaderConfig(
         type_name='CAT 966',
         bucket_capacity=4.0,
@@ -56,6 +91,20 @@ LOADER_TYPES: Dict[str, LoaderConfig] = {
         cycle_time=55,
         maintenance_interval=200,
         fuel_consumption=55
+    ),
+    'wheel_loader_993': LoaderConfig(
+        type_name='CAT 993',
+        bucket_capacity=14.5,
+        cycle_time=58,
+        maintenance_interval=250,
+        fuel_consumption=65
+    ),
+    'wheel_loader_994': LoaderConfig(
+        type_name='CAT 994',
+        bucket_capacity=19.0,
+        cycle_time=62,
+        maintenance_interval=300,
+        fuel_consumption=85
     )
 }
 
@@ -100,6 +149,46 @@ TRUCK_TYPES: Dict[str, TruckConfig] = {
         fuel_consumption_loaded=1.8,
         fuel_consumption_empty=1.1,
         maintenance_interval=300
+    ),
+    'rigid_789C': TruckConfig(
+        type_name='CAT 789C',
+        capacity=177,
+        empty_weight=98,
+        max_speed_loaded=23,
+        max_speed_empty=33,
+        fuel_consumption_loaded=2.0,
+        fuel_consumption_empty=1.3,
+        maintenance_interval=350
+    ),
+    'rigid_789D': TruckConfig(
+        type_name='CAT 789D',
+        capacity=181,
+        empty_weight=99,
+        max_speed_loaded=23,
+        max_speed_empty=33,
+        fuel_consumption_loaded=2.1,
+        fuel_consumption_empty=1.35,
+        maintenance_interval=350
+    ),
+    'rigid_793C': TruckConfig(
+        type_name='CAT 793C',
+        capacity=218,
+        empty_weight=123,
+        max_speed_loaded=21,
+        max_speed_empty=31,
+        fuel_consumption_loaded=2.4,
+        fuel_consumption_empty=1.6,
+        maintenance_interval=400
+    ),
+    'rigid_793D': TruckConfig(
+        type_name='CAT 793D',
+        capacity=227,
+        empty_weight=125,
+        max_speed_loaded=21,
+        max_speed_empty=31,
+        fuel_consumption_loaded=2.5,
+        fuel_consumption_empty=1.65,
+        maintenance_interval=400
     )
 }
 
