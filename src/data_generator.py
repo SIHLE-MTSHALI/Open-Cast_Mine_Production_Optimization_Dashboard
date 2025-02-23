@@ -97,10 +97,13 @@ def main():
     
     routes_df = pd.DataFrame(routes)
     
-    # Save to CSV files
-    trucks_df.to_csv('../data/trucks.csv', index=False)
-    shovels_df.to_csv('../data/shovels.csv', index=False)
-    routes_df.to_csv('../data/routes.csv', index=False)
+    # Save to CSV files using absolute paths
+    import os
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    
+    trucks_df.to_csv(os.path.join(data_dir, 'trucks.csv'), index=False)
+    shovels_df.to_csv(os.path.join(data_dir, 'shovels.csv'), index=False)
+    routes_df.to_csv(os.path.join(data_dir, 'routes.csv'), index=False)
     
     print("Mock data generated successfully!")
     print(f"Generated {len(trucks_df)} trucks, {len(shovels_df)} shovels, and {len(routes_df)} routes")

@@ -1,0 +1,4 @@
+shovel_id,type_name,bucket_capacity,cycle_time,fuel_consumption,location,status,current_queue,maintenance_interval
+1,CAT 993,14.5,58,65,"{'latitude': -25.884637301422487, 'longitude': 29.271327311594664}",operational,3,250
+2,CAT 395,6.0,32,45,"{'latitude': -25.865860896764886, 'longitude': 29.243672459118105}",operational,0,250
+3,CAT 3600,20.0,45,110,"{'latitude': -25.830412427136867, 'longitude': 29.21585159382595}",operational,3,400

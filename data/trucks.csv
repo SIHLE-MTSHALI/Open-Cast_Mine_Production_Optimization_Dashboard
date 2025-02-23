@@ -1,0 +1,11 @@
+truck_id,type_name,capacity,empty_weight,max_speed_loaded,max_speed_empty,fuel_consumption_loaded,fuel_consumption_empty,current_load,status,current_location,assigned_shovel,maintenance_status,maintenance_interval
+1,CAT 777E,100,64.0,30,40,1.4,0.9,0,dumping,"{'latitude': -25.891131550933153, 'longitude': 29.23385914958387}",3,maintenance_due,300
+2,Bell B30E,28,22.7,40,50,0.85,0.55,0,hauling,"{'latitude': -25.886386334059605, 'longitude': 29.19309799139389}",3,operational,250
+3,CAT 785D,140,87.0,25,35,1.8,1.1,0,idle,"{'latitude': -25.865046591521065, 'longitude': 29.200684405874537}",3,in_maintenance,300
+4,CAT 785D,140,87.0,25,35,1.8,1.1,0,dumping,"{'latitude': -25.921680658782048, 'longitude': 29.279317925620372}",3,operational,300
+5,CAT 777E,100,64.0,30,40,1.4,0.9,0,hauling,"{'latitude': -25.86579263913263, 'longitude': 29.23354018348869}",3,operational,300
+6,Bell B45E,41,32.5,35,45,1.0,0.65,0,loading,"{'latitude': -25.838727996483076, 'longitude': 29.256941295648417}",2,maintenance_due,250
+7,CAT 793C,218,123.0,21,31,2.4,1.6,0,hauling,"{'latitude': -25.833795884606698, 'longitude': 29.197461783628036}",3,operational,400
+8,CAT 793C,218,123.0,21,31,2.4,1.6,0,loading,"{'latitude': -25.84418898816005, 'longitude': 29.2379545894887}",2,operational,400
+9,CAT 789D,181,99.0,23,33,2.1,1.35,0,hauling,"{'latitude': -25.866601492878434, 'longitude': 29.183292704583984}",2,operational,350
+10,CAT 793C,218,123.0,21,31,2.4,1.6,0,hauling,"{'latitude': -25.916707956426226, 'longitude': 29.232193783783643}",3,operational,400

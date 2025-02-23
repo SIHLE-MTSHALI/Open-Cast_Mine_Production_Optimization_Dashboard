@@ -107,7 +107,7 @@ def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels, max_trucks_
     fig = go.Figure()
     
     # Add trucks to map
-    fig.add_trace(go.Scattermapbox(
+    fig.add_trace(go.Scattermap(
         lat=trucks_df['current_location'].apply(lambda x: x['latitude']),
         lon=trucks_df['current_location'].apply(lambda x: x['longitude']),
         mode='markers+text',
@@ -117,7 +117,7 @@ def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels, max_trucks_
     ))
     
     # Add shovels to map
-    fig.add_trace(go.Scattermapbox(
+    fig.add_trace(go.Scattermap(
         lat=shovels_df['location'].apply(lambda x: x['latitude']),
         lon=shovels_df['location'].apply(lambda x: x['longitude']),
         mode='markers+text',
@@ -128,8 +128,8 @@ def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels, max_trucks_
     
     fig.update_layout(
         mapbox=dict(
-            style='open-street-map',
-            center=dict(lat=-26.2041, lon=27.8695),
+            style='carto-positron',  # Using a Carto basemap style
+            center=dict(lat=-26.2041, lon=27.8695),  # Centered on Witbank mining area
             zoom=12
         ),
         margin=dict(l=0, r=0, t=0, b=0)
@@ -137,7 +137,9 @@ def update_dashboard(n_intervals, n_clicks, num_trucks, num_shovels, max_trucks_
     
     # Calculate KPIs
     idle_time_pct = len(logs_df[logs_df['event'] == 'queuing_at_shovel']) / len(logs_df) * 100
-    fuel_cost_per_ton = sim.trucks_df['fuel_consumption_rate'].mean() * 1.5  # $1.5 per liter
+    # Calculate average fuel consumption considering both loaded and empty states
+    avg_fuel_consumption = (trucks_df['fuel_consumption_loaded'].mean() + trucks_df['fuel_consumption_empty'].mean()) / 2
+    fuel_cost_per_ton = avg_fuel_consumption * 1.5  # $1.5 per liter
     utilization = sim.trucks_df['current_load'].mean() / sim.trucks_df['capacity'].mean() * 100
     
     return fig, f"{idle_time_pct:.1f}%", f"R{fuel_cost_per_ton:.2f}/ton", f"{utilization:.1f}%"
