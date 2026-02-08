@@ -65,6 +65,7 @@ class SessionInfo:
     ip_address: str
     user_agent: str
     is_active: bool = True
+    created_seq: int = 0
 
 
 # =============================================================================
@@ -83,6 +84,7 @@ class SessionManager:
         self.max_sessions = max_sessions_per_user
         self._sessions: Dict[str, SessionInfo] = {}  # session_id -> SessionInfo
         self._user_sessions: Dict[str, Set[str]] = {}  # user_id -> set of session_ids
+        self._session_seq = 0
     
     def create_session(
         self,
@@ -100,15 +102,17 @@ class SessionManager:
             # Remove oldest session
             oldest_id = min(
                 user_sessions,
-                key=lambda sid: self._sessions.get(sid, SessionInfo(
-                    sid, user_id, datetime.utcnow(), datetime.utcnow(), "", ""
-                )).created_at
+                key=lambda sid: (
+                    self._sessions[sid].created_at if sid in self._sessions else datetime.max,
+                    self._sessions[sid].created_seq if sid in self._sessions else float("inf"),
+                )
             )
             self.invalidate_session(oldest_id)
             user_sessions = self._user_sessions.get(user_id, set())
         
         session_id = str(uuid.uuid4())
         now = datetime.utcnow()
+        self._session_seq += 1
         
         session = SessionInfo(
             session_id=session_id,
@@ -117,7 +121,8 @@ class SessionManager:
             last_activity=now,
             ip_address=ip_address,
             user_agent=user_agent,
-            is_active=True
+            is_active=True,
+            created_seq=self._session_seq
         )
         
         self._sessions[session_id] = session

@@ -10,8 +10,9 @@ import Dashboard from './Dashboard';
 import QueryBuilder from './QueryBuilder';
 import ProductSpecDemandUI from './ProductSpecDemandUI';
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 const TabButton = ({ active, icon: Icon, label, onClick }) => (
     <button

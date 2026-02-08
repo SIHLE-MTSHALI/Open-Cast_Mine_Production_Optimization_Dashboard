@@ -163,7 +163,8 @@ class SurfaceService:
         self,
         points: List[Tuple[float, float, float]],
         name: str = "Surface",
-        surface_type: str = "terrain"
+        surface_type: str = "terrain",
+        site_id: Optional[str] = None
     ) -> TINSurface:
         """
         Create a TIN surface from 3D points using Delaunay triangulation.
@@ -195,12 +196,31 @@ class SurfaceService:
         triangles = [Triangle(i=int(s[0]), j=int(s[1]), k=int(s[2])) 
                      for s in tri.simplices]
         
-        return TINSurface(
+        tin = TINSurface(
             name=name,
             vertices=vertices,
             triangles=triangles,
             surface_type=surface_type
         )
+
+        # Optional persistence for workflow integration tests and API usage.
+        if self.db is not None and site_id:
+            try:
+                from ..domain.models_surface import Surface
+
+                surface = Surface(
+                    site_id=site_id,
+                    name=name,
+                    surface_type=surface_type,
+                )
+                surface.set_geometry(tin.to_vertex_list(), tin.to_triangle_list())
+                self.db.add(surface)
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                raise
+
+        return tin
     
     def create_tin_from_xyz_points(
         self,
@@ -448,8 +468,9 @@ class SurfaceService:
             return VolumeResult(volume_m3=0.0)
         
         # Create calculation grid
-        nx = int((max_x - min_x) / grid_spacing) + 1
-        ny = int((max_y - min_y) / grid_spacing) + 1
+        # Cell-based integration (sample at cell centers) to avoid edge over-counting.
+        nx = int((max_x - min_x) / grid_spacing)
+        ny = int((max_y - min_y) / grid_spacing)
         
         total_volume = 0.0
         cut_volume = 0.0
@@ -460,8 +481,8 @@ class SurfaceService:
         
         for i in range(nx):
             for j in range(ny):
-                x = min_x + i * grid_spacing
-                y = min_y + j * grid_spacing
+                x = min_x + (i + 0.5) * grid_spacing
+                y = min_y + (j + 0.5) * grid_spacing
                 
                 # Check if inside boundary
                 if boundary and not self._point_in_polygon(x, y, boundary):

@@ -5,7 +5,7 @@ const BlastEventLogger = ({ siteId, patterns, onEventLogged }) => {
     const [formData, setFormData] = useState({
         site_id: siteId,
         pattern_id: '',
-        blast_time: '',
+        blast_date: '',
         actual_tonnes: 0,
         vibration_peak_particle_velocity: 0,
         airblast_db: 0,
@@ -16,15 +16,16 @@ const BlastEventLogger = ({ siteId, patterns, onEventLogged }) => {
         e.preventDefault();
         try {
             await drillBlastAPI.createBlastEvent({
-                ...formData,
-                blast_time: new Date(formData.blast_time).toISOString()
+                site_id: formData.site_id,
+                pattern_id: formData.pattern_id,
+                blast_date: new Date(formData.blast_date).toISOString()
             });
             onEventLogged();
             alert('Blast recorded successfully');
             setFormData({
                 site_id: siteId,
                 pattern_id: '',
-                blast_time: '',
+                blast_date: '',
                 actual_tonnes: 0,
                 vibration_peak_particle_velocity: 0,
                 airblast_db: 0,
@@ -60,8 +61,8 @@ const BlastEventLogger = ({ siteId, patterns, onEventLogged }) => {
                     <input
                         required
                         type="datetime-local"
-                        value={formData.blast_time}
-                        onChange={e => setFormData({ ...formData, blast_time: e.target.value })}
+                        value={formData.blast_date}
+                        onChange={e => setFormData({ ...formData, blast_date: e.target.value })}
                     />
                 </div>
 

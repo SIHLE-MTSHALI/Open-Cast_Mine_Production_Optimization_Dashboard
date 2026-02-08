@@ -18,8 +18,9 @@ import {
     Activity, AlertTriangle, CheckCircle, TrendingUp,
     Percent, Play, RefreshCw, Sliders
 } from 'lucide-react';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 /**
  * Compliance gauge component

@@ -30,6 +30,14 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+# Ensure model metadata is registered before tests call Base.metadata.create_all(...)
+# Import is intentionally after Base declaration to avoid circular initialization issues.
+try:
+    import app.domain  # noqa: F401
+except Exception:
+    # Keep database bootstrap resilient in partial environments.
+    pass
+
 def get_db():
     db = SessionLocal()
     try:

@@ -17,6 +17,7 @@ import {
     AlertTriangle, TrendingUp, Target, Layers, Copy,
     Archive, Send, FileText, BarChart2
 } from 'lucide-react';
+import { API_BASE_URL } from '../../services/api';
 
 // Schedule Version Card
 const VersionCard = ({ version, isActive, onSelect, onPublish, onCompare }) => {
@@ -214,7 +215,7 @@ const ScheduleControl = ({ siteId, scheduleVersionId, onScheduleChange }) => {
 
     const fetchVersions = async () => {
         setLoading(true);
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const API_BASE = API_BASE_URL;
         try {
             const res = await axios.get(`${API_BASE}/schedule/site/${siteId}/versions`);
             setVersions(res.data);
@@ -244,7 +245,7 @@ const ScheduleControl = ({ siteId, scheduleVersionId, onScheduleChange }) => {
         setOptimizationProgress(0);
         setMetrics(null);
 
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const API_BASE = API_BASE_URL;
         const versionId = activeVersion?.version_id || activeVersion?.id;
 
         try {

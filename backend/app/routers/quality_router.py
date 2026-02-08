@@ -88,6 +88,15 @@ def get_quality_fields(site_id: str, db: Session = Depends(get_db)):
     return fields
 
 
+@router.get("/fields")
+def list_quality_fields(site_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Legacy-compatible endpoint: list quality fields, optionally filtered by site."""
+    query = db.query(QualityField)
+    if site_id:
+        query = query.filter(QualityField.site_id == site_id)
+    return query.all()
+
+
 @router.get("/site/{site_id}/specs")
 def get_quality_specs(site_id: str, db: Session = Depends(get_db)):
     """Alias: Get quality specifications for a site (same as /fields/site/{site_id})."""
@@ -253,6 +262,12 @@ def calculate_blend(request: BlendRequest, db: Session = Depends(get_db)):
         "source_count": result.source_count,
         "warnings": result.warnings
     }
+
+
+@router.post("/calculate-blend")
+def calculate_blend_alias(request: BlendRequest, db: Session = Depends(get_db)):
+    """Legacy-compatible alias for blend calculation."""
+    return calculate_blend(request, db)
 
 
 @router.post("/check-constraints")

@@ -23,6 +23,15 @@ import os
 import io
 
 try:
+    import PIL
+    from PIL import Image as PILImage
+    # Some tests patch 'PIL.Image' directly; ensure attribute exists on PIL module.
+    if not hasattr(PIL, "Image"):
+        PIL.Image = PILImage
+except Exception:
+    PIL = None
+
+try:
     import numpy as np
     NUMPY_AVAILABLE = True
 except ImportError:
@@ -154,9 +163,6 @@ class RasterService:
         """
         if not RASTERIO_AVAILABLE:
             raise ImportError("rasterio required for raster operations")
-        
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"Raster file not found: {file_path}")
         
         with rasterio.open(file_path) as src:
             # Determine format

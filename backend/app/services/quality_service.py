@@ -27,6 +27,34 @@ class BlendQualityResult:
     source_count: int
     warnings: List[str]
 
+    def __getitem__(self, key):
+        # Legacy compatibility: allow result["CV"] and metadata keys
+        if key in self.quality_vector:
+            return self.quality_vector[key]
+        if key == "quality_vector":
+            return self.quality_vector
+        if key == "total_tonnes":
+            return self.total_tonnes
+        if key == "source_count":
+            return self.source_count
+        if key == "warnings":
+            return self.warnings
+        raise KeyError(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __contains__(self, key):
+        return key in self.quality_vector or key in {
+            "quality_vector",
+            "total_tonnes",
+            "source_count",
+            "warnings",
+        }
+
 
 @dataclass
 class ConstraintCheckResult:
@@ -37,6 +65,38 @@ class ConstraintCheckResult:
     penalties: Dict[str, float]
     total_penalty: float
     hard_constraint_violated: bool
+
+    def __getitem__(self, key):
+        # Legacy compatibility for dict-style checks in tests
+        mapping = {
+            "is_compliant": self.is_compliant,
+            "compliant": self.is_compliant,
+            "compliance_percent": self.compliance_percent,
+            "violations": self.violations,
+            "penalties": self.penalties,
+            "total_penalty": self.total_penalty,
+            "hard_constraint_violated": self.hard_constraint_violated,
+        }
+        if key in mapping:
+            return mapping[key]
+        raise KeyError(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __contains__(self, key):
+        return key in {
+            "is_compliant",
+            "compliant",
+            "compliance_percent",
+            "violations",
+            "penalties",
+            "total_penalty",
+            "hard_constraint_violated",
+        }
 
 
 @dataclass 
@@ -64,6 +124,28 @@ class QualityService:
     - Penalty curve evaluation
     - Hard/soft constraint handling
     """
+
+    def __init__(self, db=None):
+        # Optional dependency for compatibility with legacy callers/tests.
+        self.db = db
+
+    @staticmethod
+    def _normalize_sources(sources: List[Dict]) -> List[Dict]:
+        """
+        Normalize legacy source shape:
+        - tonnes -> quantity_tonnes
+        - quality -> quality_vector
+        """
+        normalized = []
+        for src in sources or []:
+            if not isinstance(src, dict):
+                continue
+            normalized.append({
+                **src,
+                "quantity_tonnes": src.get("quantity_tonnes", src.get("tonnes", 0.0)),
+                "quality_vector": src.get("quality_vector", src.get("quality", {})),
+            })
+        return normalized
     
     # -------------------------------------------------------------------------
     # Validation
@@ -252,6 +334,7 @@ class QualityService:
             BlendQualityResult with combined quality vector
         """
         warnings = []
+        sources = QualityService._normalize_sources(sources)
         
         if not sources:
             return BlendQualityResult(
@@ -333,6 +416,49 @@ class QualityService:
             source_count=len(sources),
             warnings=warnings
         )
+
+    def check_spec_compliance(
+        self,
+        quality_vector: Dict[str, float],
+        specs: List[Dict]
+    ) -> Dict[str, object]:
+        """
+        Legacy compatibility wrapper used by older tests/callers.
+        """
+        constraints = []
+        for spec in specs or []:
+            field_name = spec.get("field") or spec.get("quality_field_id")
+            if not field_name:
+                continue
+            constraint = {
+                "field": field_name,
+                "hard_constraint": spec.get("hard_constraint", False),
+                "penalty_weight": spec.get("penalty_weight", 1.0),
+            }
+            min_val = spec.get("min_value")
+            max_val = spec.get("max_value")
+            target = spec.get("target_value", spec.get("value"))
+            if min_val is not None and max_val is not None:
+                constraint.update({"type": "Range", "min_value": min_val, "max_value": max_val})
+            elif min_val is not None:
+                constraint.update({"type": "Min", "min_value": min_val})
+            elif max_val is not None:
+                constraint.update({"type": "Max", "max_value": max_val})
+            elif target is not None:
+                constraint.update({"type": "Target", "target_value": target})
+            else:
+                continue
+            constraints.append(constraint)
+
+        result = self.evaluate_constraints(quality_vector, constraints)
+        return {
+            "compliant": result.is_compliant,
+            "violations": result.violations,
+            "penalties": result.penalties,
+            "total_penalty": result.total_penalty,
+            "compliance_percent": result.compliance_percent,
+            "hard_constraint_violated": result.hard_constraint_violated,
+        }
     
     @staticmethod
     def calculate_incremental_blend(

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { authAPI } from '../services/api';
 
 const LoginPage = ({ onLogin, defaultMode = 'login' }) => {
     const navigate = useNavigate();
@@ -17,23 +18,11 @@ const LoginPage = ({ onLogin, defaultMode = 'login' }) => {
         setError('');
 
         try {
-            const formData = new URLSearchParams();
-            formData.append('username', username);
-            formData.append('password', password);
-
-            const response = await fetch('http://localhost:8000/auth/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
-            });
-
-            if (!response.ok) throw new Error('Invalid username or password');
-
-            const data = await response.json();
+            const data = await authAPI.login(username, password);
             localStorage.setItem('token', data.access_token);
             onLogin(data.access_token);
         } catch (err) {
-            setError(err.message);
+            setError(err?.response?.data?.detail || err.message || 'Invalid username or password');
         } finally {
             setLoading(false);
         }
@@ -46,22 +35,13 @@ const LoginPage = ({ onLogin, defaultMode = 'login' }) => {
         setSuccessMsg('');
 
         try {
-            const response = await fetch('http://localhost:8000/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, email })
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.detail || 'Registration failed');
-            }
+            await authAPI.register(username, password, email);
 
             setSuccessMsg('Account created! Please log in.');
             setIsLogin(true);
             setPassword('');
         } catch (err) {
-            setError(err.message);
+            setError(err?.response?.data?.detail || err.message || 'Registration failed');
         } finally {
             setLoading(false);
         }
@@ -72,25 +52,11 @@ const LoginPage = ({ onLogin, defaultMode = 'login' }) => {
         setError('');
 
         try {
-            const formData = new URLSearchParams();
-            formData.append('username', 'admin');
-            formData.append('password', 'admin');
-
-            const response = await fetch('http://localhost:8000/auth/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error('Demo login failed - ensure backend is running');
-            }
-
-            const data = await response.json();
+            const data = await authAPI.login('admin', 'admin');
             localStorage.setItem('token', data.access_token);
             onLogin(data.access_token);
         } catch (err) {
-            setError(err.message);
+            setError(err?.response?.data?.detail || err.message || 'Demo login failed - ensure backend is running');
         } finally {
             setLoading(false);
         }

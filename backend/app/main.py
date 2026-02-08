@@ -197,8 +197,19 @@ app.include_router(resources_router.router)
 def health_check():
     """API health check endpoint."""
     return {
-        "status": "MineOpt Pro Server Running", 
+        "status": "healthy",
+        "message": "MineOpt Pro Server Running",
         "version": "2.0.0-Enterprise",
         "tables_registered": len(Base.metadata.tables)
+    }
+
+
+@app.get("/health")
+def health_probe():
+    """Container/runtime health probe endpoint."""
+    return {
+        "status": "healthy",
+        "service": "mineopt-api",
+        "version": "2.0.0-Enterprise"
     }
 

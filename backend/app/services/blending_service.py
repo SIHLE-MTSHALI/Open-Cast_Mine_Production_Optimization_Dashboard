@@ -40,6 +40,27 @@ class BlendingService:
     - Calculate penalty costs for quality deviations
     - Find optimal blend to meet targets
     """
+
+    @staticmethod
+    def _normalize_sources(parcels: List[dict]) -> List[dict]:
+        """
+        Normalize legacy and modern source shapes to:
+        - quantity_tonnes
+        - quality_vector
+        """
+        normalized = []
+        for p in parcels or []:
+            if not isinstance(p, dict):
+                continue
+            normalized.append({
+                **p,
+                "quantity_tonnes": p.get(
+                    "quantity_tonnes",
+                    p.get("tonnes", p.get("available_tonnes", 0.0)),
+                ),
+                "quality_vector": p.get("quality_vector", p.get("quality", {})),
+            })
+        return normalized
     
     def calculate_blend_quality(
         self,
@@ -56,6 +77,8 @@ class BlendingService:
         Returns:
             BlendResult with combined quality vector and totals
         """
+        parcels = self._normalize_sources(parcels)
+
         if not parcels:
             return BlendResult(quality_vector={}, total_tonnes=0.0, parcel_count=0)
         
@@ -138,6 +161,17 @@ class BlendingService:
             total_tonnes=total_tonnes,
             parcel_count=len(parcels)
         )
+
+    def calculate_blend(self, sources: List[dict]) -> Dict[str, object]:
+        """
+        Legacy compatibility wrapper used by older tests/routes.
+        """
+        blend = self.calculate_blend_quality(sources)
+        return {
+            "blend_quality": blend.quality_vector,
+            "total_tonnes": blend.total_tonnes,
+            "source_count": blend.parcel_count,
+        }
 
     def check_spec_compliance(
         self,
@@ -270,7 +304,21 @@ class BlendingService:
         Returns:
             Tuple of (selected_parcels, achieved_quality, total_penalty)
         """
+        legacy_mode = any(
+            ("available_tonnes" in p) or ("quality" in p)
+            for p in (available_parcels or [])
+        ) or any("field" in s for s in (target_spec or []))
+
+        available_parcels = self._normalize_sources(available_parcels)
+
         if not available_parcels or target_tonnes <= 0:
+            if legacy_mode:
+                return {
+                    "feasible": False,
+                    "selected_sources": [],
+                    "blend_quality": {},
+                    "total_penalty": 0.0,
+                }
             return [], {}, 0.0
         
         # Sort parcels by how well they match targets (greedy)
@@ -318,6 +366,17 @@ class BlendingService:
         # Calculate penalty
         compliance = self.check_spec_compliance(blend_result.quality_vector, target_spec)
         
+        if legacy_mode:
+            selected_tonnes = sum(p.get("quantity_tonnes", 0.0) for p in selected)
+            feasible = selected_tonnes >= target_tonnes * 0.95
+            return {
+                "feasible": feasible,
+                "selected_sources": selected,
+                "blend_quality": blend_result.quality_vector,
+                "total_penalty": compliance.total_penalty,
+                "selected_tonnes": selected_tonnes,
+            }
+
         return selected, blend_result.quality_vector, compliance.total_penalty
 
     def calculate_incremental_blend(

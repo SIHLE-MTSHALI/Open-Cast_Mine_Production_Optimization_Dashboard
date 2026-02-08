@@ -10,12 +10,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
     Settings, User, Bell, Moon, Sun, Globe, Clock,
     Database, Zap, Save, RefreshCw, ChevronRight,
     Shield, Download, Upload, Trash2, Check
 } from 'lucide-react';
+import { settingsAPI } from '../../services/api';
 
 // Settings Section Component
 const SettingsSection = ({ icon: Icon, title, description, children }) => (
@@ -133,7 +133,7 @@ const SettingsPanel = ({ siteId }) => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await axios.put(`http://localhost:8000/settings/site/${siteId}`, {
+            await settingsAPI.updateSettings(siteId, {
                 preferences,
                 schedulingParams,
                 siteSettings
@@ -141,7 +141,7 @@ const SettingsPanel = ({ siteId }) => {
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         } catch (e) {
-            console.log('Settings saved locally');
+            console.error('Failed to save settings:', e);
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         } finally {

@@ -13,6 +13,7 @@ module.exports = {
     ],
 
     moduleNameMapper: {
+        '^vitest$': '<rootDir>/src/__mocks__/vitest.js',
         '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
         '\\.(gif|ttf|eot|svg|png)$': '<rootDir>/src/__mocks__/fileMock.js'
     },

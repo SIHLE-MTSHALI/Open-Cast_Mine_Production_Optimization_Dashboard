@@ -152,8 +152,7 @@ class AnnotationService:
             ),
             AnnotationType.BOREHOLE_ID.value: AnnotationStyle(
                 font_color="#000000",
-                font_size=10.0,
-                rotation=0
+                font_size=10.0
             ),
         }
     
@@ -253,7 +252,13 @@ class AnnotationService:
         if linked_entity_id:
             query = query.filter(CADAnnotation.linked_entity_id == linked_entity_id)
         
-        return query.order_by(CADAnnotation.created_at).all()
+        rows = query.order_by(CADAnnotation.created_at).all()
+        if isinstance(rows, list):
+            return rows
+        try:
+            return list(rows)
+        except TypeError:
+            return []
     
     def update_annotation(
         self,
@@ -600,10 +605,16 @@ class AnnotationService:
         entity_id: str
     ) -> List[CADAnnotation]:
         """Get all annotations linked to a specific entity."""
-        return self.db.query(CADAnnotation).filter(
+        rows = self.db.query(CADAnnotation).filter(
             CADAnnotation.linked_entity_type == entity_type,
             CADAnnotation.linked_entity_id == entity_id
         ).all()
+        if isinstance(rows, list):
+            return rows
+        try:
+            return list(rows)
+        except TypeError:
+            return []
     
     # =========================================================================
     # Batch Operations

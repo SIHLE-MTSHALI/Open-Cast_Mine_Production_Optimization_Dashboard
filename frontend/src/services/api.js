@@ -20,8 +20,26 @@ import axios from 'axios';
 // CONFIGURATION
 // =============================================================================
 
+/** Resolve API base URL from runtime env without relying on import.meta (Jest-safe). */
+const resolveApiBaseUrl = () => {
+    if (typeof process !== 'undefined' && process.env?.VITE_API_BASE_URL) {
+        return process.env.VITE_API_BASE_URL;
+    }
+
+    if (typeof window !== 'undefined' && window.__MINEOPT_ENV__?.VITE_API_BASE_URL) {
+        return window.__MINEOPT_ENV__.VITE_API_BASE_URL;
+    }
+
+    return '/api';
+};
+
 /** Base API URL from environment or fallback */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = resolveApiBaseUrl();
+
+/** Development-mode detection for optional logging */
+const IS_DEV = typeof process !== 'undefined'
+    ? process.env?.NODE_ENV !== 'production'
+    : false;
 
 /** Default request timeout in milliseconds */
 const DEFAULT_TIMEOUT = 30000;
@@ -95,14 +113,23 @@ export const clearCachePattern = (pattern) => {
 /**
  * Configured axios instance with base settings
  */
-const api = axios.create({
+const baseApiConfig = {
     baseURL: API_BASE_URL,
     timeout: DEFAULT_TIMEOUT,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-});
+};
+
+const api = typeof axios.create === 'function' ? axios.create(baseApiConfig) : axios;
+
+if (!api.interceptors) {
+    api.interceptors = {
+        request: { use: () => {} },
+        response: { use: () => {} }
+    };
+}
 
 // =============================================================================
 // INTERCEPTORS
@@ -132,7 +159,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => {
         // Log slow requests in development
-        if (import.meta.env.DEV && response.config.metadata) {
+        if (IS_DEV && response.config.metadata) {
             const duration = Date.now() - response.config.metadata.startTime;
             if (duration > 1000) {
                 console.warn(`[API] Slow request: ${response.config.url} took ${duration}ms`);
@@ -171,7 +198,7 @@ api.interceptors.response.use(
         }
 
         // Enhanced error logging
-        if (import.meta.env.DEV) {
+        if (IS_DEV) {
             console.error('[API Error]', {
                 url: config?.url,
                 method: config?.method,
@@ -354,7 +381,12 @@ export const configAPI = {
      * @returns {Promise<{nodes: Array, arcs: Array}>}
      */
     getFlowNetwork: async (siteId) => {
-        return cachedGet(`/config/flow-network/${siteId}`);
+        const networks = await cachedGet(`/flow/networks/${siteId}`, false);
+        if (!Array.isArray(networks) || networks.length === 0) {
+            return { network_id: null, nodes: [], arcs: [] };
+        }
+        const activeNetwork = networks.find((network) => network.is_active) || networks[0];
+        return cachedGet(`/flow/networks/${activeNetwork.network_id}/full`, false);
     },
 
     /**
@@ -364,8 +396,21 @@ export const configAPI = {
      * @returns {Promise<{success: boolean}>}
      */
     saveFlowNetwork: async (siteId, data) => {
-        clearCachePattern('/config/');
-        const response = await api.put(`/config/flow-network/${siteId}`, data);
+        clearCachePattern('/flow/');
+        const networks = await api.get(`/flow/networks/${siteId}`);
+        let networkId = networks.data?.[0]?.network_id;
+
+        if (!networkId) {
+            const created = await api.post('/flow/networks', null, {
+                params: {
+                    site_id: siteId,
+                    name: 'Primary Flow Network'
+                }
+            });
+            networkId = created.data.network_id;
+        }
+
+        const response = await api.post(`/flow/networks/${networkId}/layout`, data);
         return response.data;
     },
 
@@ -376,6 +421,16 @@ export const configAPI = {
     seedDemoData: async () => {
         clearCache();
         const response = await api.post('/config/seed-demo-data');
+        return response.data;
+    },
+
+    /**
+     * Seed comprehensive demo data pack.
+     * @returns {Promise<Object>}
+     */
+    seedComprehensiveDemoData: async () => {
+        clearCache();
+        const response = await api.post('/config/seed-comprehensive-demo');
         return response.data;
     }
 };
@@ -480,7 +535,10 @@ export const scheduleAPI = {
      */
     createVersion: async (siteId, name) => {
         clearCachePattern('/schedule/');
-        const response = await api.post(`/schedule/site/${siteId}/versions`, { name });
+        const response = await api.post('/schedule/versions', {
+            site_id: siteId,
+            name
+        });
         return response.data;
     },
 
@@ -588,7 +646,7 @@ export const optimizationAPI = {
      */
     runFastPass: async (siteId, scheduleVersionId) => {
         clearCachePattern('/schedule/');
-        const response = await api.post('/optimization/fast-pass', {
+        const response = await api.post('/optimization/run-fast', {
             site_id: siteId,
             schedule_version_id: scheduleVersionId
         });
@@ -713,7 +771,26 @@ export const washPlantAPI = {
      * @returns {Promise<{rows: Array<{sg: number, yield_percent: number}>}>}
      */
     getWashTable: async (plantId) => {
-        return cachedGet(`/washplant/${plantId}/wash-table`);
+        const config = await cachedGet(`/wash-plants/${plantId}/config`, false);
+        if (!config?.wash_table_id) {
+            return { rows: [] };
+        }
+        const table = await cachedGet(`/wash-plants/tables/${config.wash_table_id}`, false);
+        const rows = Array.isArray(table?.rows) ? table.rows : [];
+
+        return {
+            ...table,
+            rows: rows.map((row, index) => ({
+                row_id: row.row_id || `row-${index}`,
+                feed_ash_min: row.reject_quality?.feed_ash_min ?? index * 5,
+                feed_ash_max: row.reject_quality?.feed_ash_max ?? ((index + 1) * 5),
+                product_yield: (row.cumulative_yield || 0) * 100,
+                product_ash: row.product_quality?.Ash ?? row.product_quality?.ASH_ADB ?? 0,
+                product_cv: row.product_quality?.CV ?? row.product_quality?.CV_ARB ?? 0,
+                reject_ash: row.reject_quality?.Ash ?? row.reject_quality?.ASH_ADB ?? 0
+            })),
+            wash_table_id: config.wash_table_id
+        };
     },
 
     /**
@@ -724,7 +801,9 @@ export const washPlantAPI = {
      */
     updateWashTable: async (plantId, rows) => {
         clearCachePattern('/wash');
-        const response = await api.put(`/washplant/${plantId}/wash-table`, { rows });
+        const config = await api.get(`/wash-plants/${plantId}/config`);
+        const washTableId = config.data?.wash_table_id;
+        const response = await api.put(`/wash-plants/tables/${washTableId}/rows`, { rows });
         return response.data;
     },
 
@@ -734,7 +813,7 @@ export const washPlantAPI = {
      * @returns {Promise<{cutpoint: number, throughput: number}>}
      */
     getParameters: async (plantId) => {
-        return cachedGet(`/washplant/${plantId}/parameters`);
+        return cachedGet(`/wash-plants/${plantId}/config`, false);
     },
 
     /**
@@ -745,7 +824,7 @@ export const washPlantAPI = {
      */
     updateParameters: async (plantId, params) => {
         clearCachePattern('/wash');
-        const response = await api.put(`/washplant/${plantId}/parameters`, params);
+        const response = await api.put(`/wash-plants/${plantId}/config`, params);
         return response.data;
     },
 
@@ -756,7 +835,7 @@ export const washPlantAPI = {
      * @returns {Promise<{product_tonnes: number, yield_percent: number, product_quality: Object}>}
      */
     simulateProcess: async (plantId, input) => {
-        const response = await api.post(`/washplant/${plantId}/simulate`, input);
+        const response = await api.post(`/wash-plants/${plantId}/process`, input);
         return response.data;
     }
 };
@@ -953,8 +1032,10 @@ export const reportingAPI = {
      * @returns {Promise<Object>}
      */
     getDashboard: async (scheduleVersionId) => {
-        const url = buildUrl('/reporting/dashboard', { schedule_version_id: scheduleVersionId });
-        return cachedGet(url);
+        if (!scheduleVersionId) {
+            return {};
+        }
+        return cachedGet(`/reporting/dashboard/${scheduleVersionId}`, false);
     },
 
     /**
@@ -964,7 +1045,7 @@ export const reportingAPI = {
      * @returns {Promise<Object>}
      */
     getProductionSummary: async (siteId, period) => {
-        return cachedGet(`/reporting/site/${siteId}/summary?period=${period}`);
+        return cachedGet(`/reporting/summary/production/${siteId}?period=${period}`, false);
     },
 
     /**
@@ -974,7 +1055,7 @@ export const reportingAPI = {
      * @returns {Promise<Blob|string>}
      */
     exportReport: async (siteId, format = 'csv') => {
-        const response = await api.get(`/reporting/site/${siteId}/export?format=${format}`, {
+        const response = await api.post(`/reporting/export/${format}/schedule-summary`, { schedule_version_id: siteId }, {
             responseType: format === 'pdf' ? 'blob' : 'text'
         });
         return response.data;
@@ -1203,8 +1284,10 @@ export const drillBlastAPI = {
      * @returns {Promise<{x50: number, x80: number, uniformity_index: number}>}
      */
     predictFragmentation: async (params) => {
-        const response = await api.post('/drill-blast/predict-fragmentation', params);
-        return response.data;
+        const patternId = typeof params === 'string' ? params : params?.pattern_id;
+        const modelId = typeof params === 'object' ? params?.model_id : undefined;
+        const url = buildUrl(`/drill-blast/patterns/${patternId}/fragmentation`, { model_id: modelId });
+        return cachedGet(url, false);
     }
 };
 
@@ -1473,7 +1556,7 @@ export const surfaceAPI = {
      * @returns {Promise<{vertices: Array, faces: Array}>}
      */
     getSurfaceMesh: async (surfaceId) => {
-        return cachedGet(`/surfaces/${surfaceId}/mesh`);
+        return cachedGet(`/surfaces/${surfaceId}`, false);
     },
 
     /**
@@ -1482,7 +1565,7 @@ export const surfaceAPI = {
      * @returns {Promise<Array>}
      */
     getSurfaceVersions: async (surfaceId) => {
-        return cachedGet(`/surfaces/${surfaceId}/versions`);
+        return cachedGet(`/surfaces/${surfaceId}/history`, false);
     },
 
     /**
@@ -1492,7 +1575,10 @@ export const surfaceAPI = {
      * @returns {Promise<{cut_volume: number, fill_volume: number, net_volume: number}>}
      */
     compareSurfaces: async (surfaceId1, surfaceId2) => {
-        const response = await api.get(`/surfaces/compare?surface1=${surfaceId1}&surface2=${surfaceId2}`);
+        const response = await api.post('/surfaces/volume-between', {
+            upper_surface_id: surfaceId1,
+            lower_surface_id: surfaceId2
+        });
         return response.data;
     },
 
@@ -1503,7 +1589,10 @@ export const surfaceAPI = {
      */
     uploadSurface: async (formData) => {
         clearCachePattern('/surfaces/');
-        const response = await api.post('/surfaces/upload', formData, {
+        const siteId = formData.get('site_id');
+        const name = formData.get('name');
+        const surfaceType = formData.get('surface_type') || 'terrain';
+        const response = await api.post(`/surfaces/create-from-file?site_id=${siteId}&name=${encodeURIComponent(name)}&surface_type=${surfaceType}`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         return response.data;
@@ -1525,7 +1614,8 @@ export const integrationAPI = {
      * @returns {Promise<Array<{external_id: string, internal_id: string}>>}
      */
     getMappings: async (entityType) => {
-        return cachedGet(`/integration/mappings/${entityType}`);
+        const url = buildUrl('/integration/mappings', { entity_type: entityType });
+        return cachedGet(url, false);
     },
 
     /**
@@ -1536,7 +1626,10 @@ export const integrationAPI = {
      */
     createMapping: async (entityType, mapping) => {
         clearCachePattern('/integration/');
-        const response = await api.post(`/integration/mappings/${entityType}`, mapping);
+        const response = await api.post('/integration/mappings', {
+            ...mapping,
+            entity_type: entityType
+        });
         return response.data;
     },
 
@@ -1546,9 +1639,7 @@ export const integrationAPI = {
      * @returns {Promise<{records_imported: number}>}
      */
     importLabResults: async (formData) => {
-        const response = await api.post('/integration/lab-results', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const response = await api.post('/integration/lab-results/import-delayed', formData);
         return response.data;
     },
 
@@ -1558,7 +1649,7 @@ export const integrationAPI = {
      * @returns {Promise<{extract_id: string}>}
      */
     triggerBIExtract: async (config) => {
-        const response = await api.post('/integration/bi-extract', config);
+        const response = await api.post('/integration/bi-extracts', config);
         return response.data;
     },
 
@@ -1567,7 +1658,7 @@ export const integrationAPI = {
      * @returns {Promise<Array<{system: string, status: string, last_sync: string}>>}
      */
     getConnectionsStatus: async () => {
-        return cachedGet('/integration/connections');
+        return cachedGet('/integration/connectors', false);
     }
 };
 

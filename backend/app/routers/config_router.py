@@ -47,6 +47,15 @@ def get_resources(site_id: str = None, db: Session = Depends(get_db)):
         query = query.filter(models_resource.Resource.site_id == site_id)
     return query.all()
 
+
+@router.get("/material-types")
+def get_material_types(site_id: str = None, db: Session = Depends(get_db)):
+    """Get material types, optionally filtered by site."""
+    query = db.query(models_resource.MaterialType)
+    if site_id:
+        query = query.filter(models_resource.MaterialType.site_id == site_id)
+    return query.all()
+
 @router.get("/activity-areas")
 def get_activity_areas(site_id: str = None, db: Session = Depends(get_db)):
     query = db.query(models_resource.ActivityArea)

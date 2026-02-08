@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Mountain, Wind, AlertTriangle, Settings, RefreshCw, Bell, Activity } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { useSite } from '../context/SiteContext';
@@ -65,11 +66,18 @@ const DustChart = ({ data }) => {
 };
 
 const MonitoringDashboard = () => {
-    const [activeTab, setActiveTab] = useState('slope');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const requestedTab = searchParams.get('tab');
+    const [activeTab, setActiveTab] = useState(requestedTab || 'slope');
     const [slopeAlerts, setSlopeAlerts] = useState([]);
     const [dustData, setDustData] = useState([]);
     const [loading, setLoading] = useState(true);
     const { currentSiteId, loading: siteLoading } = useSite();
+
+    useEffect(() => {
+        const nextTab = requestedTab || 'slope';
+        setActiveTab(nextTab);
+    }, [requestedTab]);
 
     useEffect(() => {
         if (currentSiteId) {
@@ -169,7 +177,10 @@ const MonitoringDashboard = () => {
                                         ? 'text-purple-400'
                                         : 'text-slate-400 hover:text-slate-200'
                                     }`}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    setActiveTab(tab.id);
+                                    setSearchParams({ tab: tab.id });
+                                }}
                             >
                                 <tab.icon size={16} />
                                 {tab.label}

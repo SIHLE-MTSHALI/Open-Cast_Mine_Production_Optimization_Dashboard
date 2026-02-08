@@ -14,8 +14,9 @@ import {
     CheckCircle, AlertCircle, RefreshCw, Edit3, Save, X
 } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 // Entity type tabs
 const ENTITY_TYPES = [

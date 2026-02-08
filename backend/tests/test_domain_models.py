@@ -60,8 +60,7 @@ class TestSiteModel:
         site = Site(
             site_id="site-001",
             name="Test Mine",
-            location="South Africa",
-            timezone="Africa/Johannesburg"
+            time_zone="Africa/Johannesburg"
         )
         session.add(site)
         session.commit()
@@ -69,7 +68,7 @@ class TestSiteModel:
         retrieved = session.query(Site).filter_by(site_id="site-001").first()
         assert retrieved is not None
         assert retrieved.name == "Test Mine"
-        assert retrieved.timezone == "Africa/Johannesburg"
+        assert retrieved.time_zone == "Africa/Johannesburg"
     
     def test_site_unique_id(self, session):
         """Test that site_id must be unique."""
@@ -126,19 +125,21 @@ class TestCalendarModel:
         ds = Period(
             period_id="p-ds-1",
             calendar_id=calendar.calendar_id,
-            sequence_number=1,
+            name="2024-01-01 Day Shift",
+            sequence=1,
             start_datetime=datetime(2024, 1, 1, 6, 0),
             end_datetime=datetime(2024, 1, 1, 18, 0),
-            period_type="DayShift",
+            group_shift="Day",
             duration_hours=12.0
         )
         ns = Period(
             period_id="p-ns-1",
             calendar_id=calendar.calendar_id,
-            sequence_number=2,
+            name="2024-01-01 Night Shift",
+            sequence=2,
             start_datetime=datetime(2024, 1, 1, 18, 0),
             end_datetime=datetime(2024, 1, 2, 6, 0),
-            period_type="NightShift",
+            group_shift="Night",
             duration_hours=12.0
         )
         session.add_all([ds, ns])
@@ -146,12 +147,12 @@ class TestCalendarModel:
         
         periods = session.query(Period)\
             .filter_by(calendar_id=calendar.calendar_id)\
-            .order_by(Period.sequence_number)\
+            .order_by(Period.sequence)\
             .all()
         
         assert len(periods) == 2
-        assert periods[0].period_type == "DayShift"
-        assert periods[1].period_type == "NightShift"
+        assert periods[0].group_shift == "Day"
+        assert periods[1].group_shift == "Night"
 
 
 # =============================================================================
@@ -172,8 +173,8 @@ class TestResourceModel:
             name="Excavator 1",
             resource_type="Excavator",
             site_id=site.site_id,
-            default_rate_per_hour=2000.0,
-            rate_unit="tonnes"
+            base_rate=2000.0,
+            base_rate_units="tonnes/hour"
         )
         session.add(resource)
         session.commit()
@@ -181,7 +182,7 @@ class TestResourceModel:
         retrieved = session.query(Resource).filter_by(resource_id="ex-001").first()
         assert retrieved is not None
         assert retrieved.name == "Excavator 1"
-        assert retrieved.default_rate_per_hour == 2000.0
+        assert retrieved.base_rate == 2000.0
     
     def test_resource_activities(self, session):
         """Test resource with assigned activities."""
@@ -192,8 +193,8 @@ class TestResourceModel:
         activity = Activity(
             activity_id="act-loading",
             name="Loading",
-            activity_type="Primary",
-            site_id=site.site_id
+            site_id=site.site_id,
+            moves_material=True
         )
         session.add(activity)
         session.commit()
@@ -227,7 +228,7 @@ class TestFlowNetworkModel:
             network_id="net-001",
             name="Main Flow Network",
             site_id=site.site_id,
-            is_default=True
+            is_active=True
         )
         session.add(network)
         session.commit()
@@ -252,9 +253,8 @@ class TestFlowNetworkModel:
         arc = FlowArc(
             arc_id="arc-001",
             network_id=network.network_id,
-            source_node_id=pit.node_id,
-            destination_node_id=stockpile.node_id,
-            arc_name="Pit A to ROM 1"
+            from_node_id=pit.node_id,
+            to_node_id=stockpile.node_id
         )
         session.add(arc)
         session.commit()
@@ -269,8 +269,8 @@ class TestFlowNetworkModel:
         
         assert len(nodes) == 2
         assert len(arcs) == 1
-        assert arcs[0].source_node_id == "pit-a"
-        assert arcs[0].destination_node_id == "rom-1"
+        assert arcs[0].from_node_id == "pit-a"
+        assert arcs[0].to_node_id == "rom-1"
 
 
 # =============================================================================
@@ -322,10 +322,8 @@ class TestScheduleModel:
             task_id="task-001",
             schedule_version_id=schedule.version_id,
             period_id="p-001",
-            activity_name="Loading",
-            quantity_tonnes=5000.0,
-            duration_hours=2.5,
-            start_offset_hours=0.0
+            task_type="Mining",
+            planned_quantity=5000.0
         )
         session.add(task)
         session.commit()
@@ -335,7 +333,7 @@ class TestScheduleModel:
             .all()
         
         assert len(tasks) == 1
-        assert tasks[0].quantity_tonnes == 5000.0
+        assert tasks[0].planned_quantity == 5000.0
 
 
 # =============================================================================

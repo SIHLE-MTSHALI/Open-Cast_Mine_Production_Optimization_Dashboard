@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Play, Zap, Send, FileText, Clock, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 const Dashboard = ({ scheduleVersionId, siteId, versionName, onRefresh }) => {
     const [stats, setStats] = useState(null);

@@ -1,0 +1,102 @@
+[
+  {
+    "body": "### Summary\nMultiple frontend API calls do not match implemented backend routes, causing broken workflows.\n\n### Evidence\n- `frontend/src/services/api.js:357`, `frontend/src/services/api.js:368` vs `backend/app/routers/config_router.py:39`.\n- `frontend/src/services/api.js:483` vs `backend/app/routers/schedule_router.py:29`.\n- `frontend/src/services/api.js:552` (no backend publish route).\n- `frontend/src/services/api.js:591` vs `backend/app/routers/optimization_router.py:65`.\n- `frontend/src/services/api.js:956`, `frontend/src/services/api.js:967`, `frontend/src/services/api.js:977` vs `backend/app/routers/reporting_router.py:174`, `backend/app/routers/reporting_router.py:442`, `backend/app/routers/reporting_router.py:332`.\n- `frontend/src/services/api.js:1206` vs `backend/app/routers/drill_blast_router.py:374`.\n- `frontend/src/services/api.js:1476`, `frontend/src/services/api.js:1485`, `frontend/src/services/api.js:1495`, `frontend/src/services/api.js:1506` vs `backend/app/routers/surface_router.py:137`.\n- `frontend/src/services/api.js:1528`, `frontend/src/services/api.js:1539`, `frontend/src/services/api.js:1549` vs `backend/app/routers/integration_router.py:687`, `backend/app/routers/integration_router.py:704`, `backend/app/routers/integration_router.py:839`.\n\n### Acceptance Criteria\n- All frontend API methods map to real backend endpoints.\n- Removed/renamed endpoints are reflected in frontend service layer.\n- Contract tests validate route + payload shape for all core modules.\r\n",
+    "number": 1,
+    "title": "Fix critical frontend/backend API contract drift"
+  },
+  {
+    "body": "### Summary\nSeed success CTA routes to non-existent `/dashboard` instead of `/app/dashboard`.\n\n### Evidence\n- `frontend/src/pages/SeedDataPage.jsx:202`\n- Valid route table in `frontend/src/App.jsx:87`.\n\n### Acceptance Criteria\n- CTA navigates to `/app/dashboard`.\n- Add navigation test for SeedData success flow.\r\n",
+    "number": 2,
+    "title": "Fix Seed Data success navigation target"
+  },
+  {
+    "body": "### Summary\n`ShiftLog` expects `activeShift`, but dashboard passes `shiftId`.\n\n### Evidence\n- `frontend/src/components/operations/ShiftLog.jsx:4`\n- `frontend/src/pages/OperationsDashboard.jsx:214`\n\n### Acceptance Criteria\n- Prop interface aligned.\n- Shift log loads current tickets for active shift.\r\n",
+    "number": 3,
+    "title": "Fix ShiftLog prop contract mismatch in Operations Dashboard"
+  },
+  {
+    "body": "### Summary\nFrontend handover payload field names do not match backend `HandoverCreate` schema.\n\n### Evidence\n- Frontend payload fields: `frontend/src/components/operations/ShiftHandoverForm.jsx:7` to `frontend/src/components/operations/ShiftHandoverForm.jsx:10`\n- Backend schema: `backend/app/routers/operations_router.py:79` to `backend/app/routers/operations_router.py:86`\n\n### Acceptance Criteria\n- Submit payload validates without 422.\n- End-to-end handover + shift end flow passes.\r\n",
+    "number": 4,
+    "title": "Fix shift handover payload schema mismatch"
+  },
+  {
+    "body": "### Summary\nFrontend sends `blast_time`, backend requires `blast_date`.\n\n### Evidence\n- Frontend: `frontend/src/components/drillblast/BlastEventLogger.jsx:8`, `frontend/src/components/drillblast/BlastEventLogger.jsx:20`\n- Backend: `backend/app/routers/drill_blast_router.py:114`\n\n### Acceptance Criteria\n- Blast event form submits successfully.\n- Regression test ensures schema compatibility.\r\n",
+    "number": 5,
+    "title": "Fix blast event payload mismatch (`blast_time` vs `blast_date`)"
+  },
+  {
+    "body": "### Summary\nViewer stores full response object in `blocks` state instead of `response.blocks`.\n\n### Evidence\n- `frontend/src/components/geology/GeologyViewer.jsx:246`\n- Backend response shape: `backend/app/routers/geology_router.py:45`\n\n### Acceptance Criteria\n- Viewer handles backend response shape correctly.\n- Filtering/search works on array data.\r\n",
+    "number": 6,
+    "title": "Fix geology response parsing in `GeologyViewer`"
+  },
+  {
+    "body": "### Summary\nWash plant UI mixes endpoint families and mismatched IDs/response shapes.\n\n### Evidence\n- `frontend/src/components/washplant/WashPlantConfig.jsx:233` to `frontend/src/components/washplant/WashPlantConfig.jsx:237`\n- `frontend/src/components/washplant/WashPlantConfig.jsx:261`\n- Backend singular router: `backend/app/routers/washplant_router.py:13`, `backend/app/routers/washplant_router.py:16`\n- Backend plural router: `backend/app/routers/wash_table_router.py:21`, `backend/app/routers/wash_table_router.py:338`\n\n### Acceptance Criteria\n- Unified endpoint strategy (`/washplant` vs `/wash-plants`) documented and implemented.\n- UI uses correct identifier (`node_id` or canonical equivalent).\n- Full load/edit/save wash table workflow passes.\r\n",
+    "number": 7,
+    "title": "Fix wash plant UI/backend integration mismatch"
+  },
+  {
+    "body": "### Summary\nFrontend mixes centralized client, hardcoded hosts, and `/api` calls while Vite proxy is disabled.\n\n### Evidence\n- Base client: `frontend/src/services/api.js:24`\n- Hardcoded fetch/axios examples: `frontend/src/pages/LoginPage.jsx:24`, `frontend/src/components/geology/GeologyViewer.jsx:245`\n- `/api` calls: `frontend/src/components/import/SiteBuilderWizard.jsx:128`\n- Disabled Vite proxy: `frontend/vite.config.js:15` to `frontend/vite.config.js:19`\n\n### Acceptance Criteria\n- One source of truth for API base URL.\n- No raw hardcoded backend URLs in feature components.\n- Local dev + docker deploys both work without code changes.\r\n",
+    "number": 8,
+    "title": "Standardize API access patterns (remove hardcoded localhost and mixed `/api`)"
+  },
+  {
+    "body": "### Summary\nContainer healthcheck probes `/health`, but backend only serves `/`.\n\n### Evidence\n- Healthcheck probe: `backend/Dockerfile:31`\n- Existing route: `backend/app/main.py:196`\n- Runtime check result: `/health` returns 404.\n\n### Acceptance Criteria\n- `/health` returns 200 with lightweight payload.\n- Docker healthcheck passes consistently.\r\n",
+    "number": 9,
+    "title": "Add real `/health` endpoint or align healthcheck target"
+  },
+  {
+    "body": "### Summary\n`pytest` fails during collection because package import path is not configured.\n\n### Evidence\n- Failing collection in `tests/test_api_endpoints.py` and others.\n- `backend/pytest.ini` lacks `pythonpath` config.\n\n### Acceptance Criteria\n- `pytest` runs from backend root with no import-path errors.\n- CI command is documented and reproducible.\r\n",
+    "number": 10,
+    "title": "Fix backend test execution baseline (`ModuleNotFoundError: app`)"
+  },
+  {
+    "body": "### Summary\nEven with `PYTHONPATH=.`, domain model tests fail due outdated field expectations.\n\n### Evidence\n- `tests/test_domain_models.py` failures (`invalid keyword argument` for multiple models).\n\n### Acceptance Criteria\n- Tests updated to current schema contracts.\n- Model contract tests reflect authoritative model fields.\r\n",
+    "number": 11,
+    "title": "Repair stale backend tests after model evolution"
+  },
+  {
+    "body": "### Summary\n`npm test` fails immediately: `module is not defined` in Jest config under ESM project setup.\n\n### Evidence\n- `frontend/package.json` has `\"type\": \"module\"`.\n- `frontend/jest.config.js:5` uses CommonJS `module.exports`.\n\n### Acceptance Criteria\n- Jest config and runtime compatible with current module system.\n- `npm test` executes suite.\r\n",
+    "number": 12,
+    "title": "Fix frontend Jest/ESM configuration incompatibility"
+  },
+  {
+    "body": "### Summary\n`npm run lint` reports 301 findings (270 errors, 31 warnings), preventing reliable gating.\n\n### Evidence\n- Lint run output from 2026-02-07 audit.\n\n### Acceptance Criteria\n- Error count driven to zero (or staged baseline policy with ratchet).\n- Key hooks/immutability violations fixed first.\r\n",
+    "number": 13,
+    "title": "Establish lint quality baseline and enforce cleanup"
+  },
+  {
+    "body": "### Summary\nSeveral modules silently swap to demo/mock data on API failure, masking defects.\n\n### Evidence\n- `frontend/src/components/scheduler/ScheduleControl.jsx:315`\n- `frontend/src/components/reporting/ReportingModule.jsx:48`\n- `frontend/src/components/reporting/ReportingModule.jsx:104`\n- `frontend/src/components/quality/QualitySpecs.jsx:178`\n- `frontend/src/pages/SiteDashboard.jsx:203`\n- `frontend/src/components/integration/ExternalIdMappingUI.jsx:148`\n\n### Acceptance Criteria\n- Production mode surfaces real errors; no silent fake-success paths.\n- Demo mode explicitly feature-flagged.\r\n",
+    "number": 14,
+    "title": "Remove production-time mock fallback paths from critical workflows"
+  },
+  {
+    "body": "### Summary\nPublished API docs describe outdated routes and mislead integration work.\n\n### Evidence\n- `docs/API_DOCUMENTATION.md:61`, `docs/API_DOCUMENTATION.md:76`, `docs/API_DOCUMENTATION.md:132`, `docs/API_DOCUMENTATION.md:139`.\n\n### Acceptance Criteria\n- Docs generated from OpenAPI or contract source of truth.\n- Frontend service docs and backend docs align.\r\n",
+    "number": 15,
+    "title": "Update API documentation to match implemented routes"
+  },
+  {
+    "body": "### Summary\nMost routers do not enforce auth dependencies despite docs stating auth is required.\n\n### Evidence\n- Auth dependencies present mostly in `backend/app/routers/auth_router.py`.\n- No equivalent dependency patterns found broadly in other routers.\n\n### Acceptance Criteria\n- Defined auth matrix per route group.\n- Protected routes enforce auth/roles.\n- Public routes explicitly documented.\r\n",
+    "number": 16,
+    "title": "Add authentication enforcement policy for non-auth routers"
+  },
+  {
+    "body": "### Summary\n`FlowNetwork` is referenced but not imported, likely causing runtime error.\n\n### Evidence\n- Usage: `backend/app/routers/wash_table_router.py:312`.\n- Imports section lacks `FlowNetwork`: `backend/app/routers/wash_table_router.py:14` to `backend/app/routers/wash_table_router.py:16`.\n\n### Acceptance Criteria\n- Route executes without `NameError`.\n- Add regression test for `/wash-plants/site/{site_id}`.\r\n",
+    "number": 17,
+    "title": "Fix `FlowNetwork` import gap in wash table router"
+  },
+  {
+    "body": "### Summary\nNavigation uses button elements without explicit route semantics/state and has duplicate intent labels on same path.\n\n### Evidence\n- Nav item implementation: `frontend/src/components/layout/AppLayout.jsx:231`.\n- Monitoring entries share same path: `frontend/src/components/layout/AppLayout.jsx:198`, `frontend/src/components/layout/AppLayout.jsx:199`.\n\n### Acceptance Criteria\n- Use semantic links for route navigation or explicit ARIA state management.\n- Distinct route state/query params for distinct monitoring intents.\r\n",
+    "number": 18,
+    "title": "Improve navigation semantics and route intent clarity"
+  },
+  {
+    "body": "### Summary\nLegacy/duplicate nav components increase maintenance drift risk.\n\n### Evidence\n- `frontend/src/components/ui/Sidebar.jsx` appears not imported by active app shell.\n- `frontend/src/components/ui/AppHeader.jsx` appears unused.\n\n### Acceptance Criteria\n- Consolidate to one navigation system.\n- Delete dead components or wire them intentionally.\r\n",
+    "number": 19,
+    "title": "Remove or integrate dead/duplicate navigation components"
+  },
+  {
+    "body": "### Summary\nFrontend production bundle is very large (>2MB minified main chunk).\n\n### Evidence\n- Build output warning from `vite build` (`assets/index-*.js` ~2.27 MB, chunk warning).\n\n### Acceptance Criteria\n- Route/module-level code splitting for heavy planner/3D/reporting modules.\n- Bundle budget and CI check added.\r\n",
+    "number": 20,
+    "title": "Reduce production bundle size and add code splitting"
+  }
+]

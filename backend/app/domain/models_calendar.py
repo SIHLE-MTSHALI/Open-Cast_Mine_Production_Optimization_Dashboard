@@ -105,3 +105,17 @@ class Period(Base):
             return delta.total_seconds() / 3600
         return 0.0
 
+    def __init__(self, **kwargs):
+        # Legacy aliases used by older tests/workflows
+        if "sequence_number" in kwargs and "sequence" not in kwargs:
+            kwargs["sequence"] = kwargs.pop("sequence_number")
+        if "period_type" in kwargs and "group_shift" not in kwargs:
+            kwargs["group_shift"] = kwargs.pop("period_type")
+        if "name" not in kwargs:
+            start_dt = kwargs.get("start_datetime")
+            if start_dt is not None:
+                kwargs["name"] = start_dt.isoformat()
+            else:
+                kwargs["name"] = "Period"
+        super().__init__(**kwargs)
+

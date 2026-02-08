@@ -9,32 +9,31 @@
  * - Sidebar navigation configuration
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import React from 'react';
 
 // Mock dependencies
-vi.mock('axios', () => ({
+jest.mock('axios', () => ({
     default: {
-        get: vi.fn(),
-        post: vi.fn(),
-        put: vi.fn(),
-        delete: vi.fn(),
-        patch: vi.fn(),
-        create: vi.fn(() => ({
-            get: vi.fn(() => Promise.resolve({ data: {} })),
-            post: vi.fn(() => Promise.resolve({ data: {} })),
+        get: jest.fn(),
+        post: jest.fn(),
+        put: jest.fn(),
+        delete: jest.fn(),
+        patch: jest.fn(),
+        create: jest.fn(() => ({
+            get: jest.fn(() => Promise.resolve({ data: {} })),
+            post: jest.fn(() => Promise.resolve({ data: {} })),
             interceptors: {
-                request: { use: vi.fn() },
-                response: { use: vi.fn() }
+                request: { use: jest.fn() },
+                response: { use: jest.fn() }
             }
         }))
     }
 }));
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
+jest.mock('lucide-react', () => ({
     Home: () => null,
     Box: () => null,
     Calendar: () => null,

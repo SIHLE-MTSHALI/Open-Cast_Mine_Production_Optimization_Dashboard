@@ -20,8 +20,9 @@ import {
 import axios from 'axios';
 import GanttTaskBar, { MaintenanceOverlay, GanttFilters } from './GanttTaskBar';
 import GanttContextMenu from './GanttContextMenu';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 const GanttChart = ({ siteId, resources = [], scheduleVersionId, periods = [], onTaskUpdate }) => {
     const [tasks, setTasks] = useState([]);

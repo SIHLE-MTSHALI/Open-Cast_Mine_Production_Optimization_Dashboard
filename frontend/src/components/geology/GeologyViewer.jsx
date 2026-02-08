@@ -10,11 +10,11 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
 import {
     Layers, Filter, Search, RefreshCw, ChevronDown, ChevronRight,
     Box, Eye, EyeOff, Download, Upload, Info, MapPin
 } from 'lucide-react';
+import { geologyAPI } from '../../services/api';
 
 // Color scales for quality visualization
 const QUALITY_COLORS = {
@@ -222,6 +222,7 @@ const StatsSummary = ({ blocks }) => {
 const GeologyViewer = ({ siteId }) => {
     const [blocks, setBlocks] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [colorBy, setColorBy] = useState('CV');
     const [selectedBlock, setSelectedBlock] = useState(null);
@@ -241,21 +242,32 @@ const GeologyViewer = ({ siteId }) => {
 
     const fetchBlocks = async () => {
         setLoading(true);
+        setError('');
         try {
-            const res = await axios.get(`http://localhost:8000/geology/site/${siteId}/blocks`);
-            setBlocks(res.data);
+            const res = await geologyAPI.getBlocks(siteId);
+            const rawBlocks = Array.isArray(res?.blocks) ? res.blocks : [];
+
+            const normalizedBlocks = rawBlocks.map((block) => {
+                const quality = block.quality || {};
+                return {
+                    id: block.block_id,
+                    block_id: block.block_id,
+                    name: block.name,
+                    material_type: quality.material_type || 'Coal',
+                    tonnes: quality.tonnes || 0,
+                    CV: quality.CV || quality.cv || quality.CV_ARB || 0,
+                    Ash: quality.Ash || quality.ash || quality.ASH_ADB || 0,
+                    Moisture: quality.Moisture || quality.moisture || quality.TM_ARB || 0,
+                    status: block.is_locked ? 'Locked' : 'Available',
+                    bench: block.bench_level,
+                    geometry: block.geometry
+                };
+            });
+
+            setBlocks(normalizedBlocks);
         } catch (e) {
-            // Sample block model data
-            setBlocks([
-                { id: 'BLK-001', name: 'Block A-1-1', material_type: 'Thermal Coal', tonnes: 45000, CV: 24.2, Ash: 11.5, Moisture: 8.2, status: 'Available', bench: 'B1', x: 100, y: 200, z: 50 },
-                { id: 'BLK-002', name: 'Block A-1-2', material_type: 'Thermal Coal', tonnes: 52000, CV: 23.8, Ash: 12.1, Moisture: 8.5, status: 'Scheduled', bench: 'B1', x: 110, y: 200, z: 50 },
-                { id: 'BLK-003', name: 'Block A-2-1', material_type: 'Thermal Coal', tonnes: 38000, CV: 22.5, Ash: 13.8, Moisture: 9.1, status: 'Available', bench: 'B2', x: 100, y: 210, z: 45 },
-                { id: 'BLK-004', name: 'Block B-1-1', material_type: 'Overburden', tonnes: 120000, CV: 0, Ash: 85, Moisture: 5, status: 'Available', bench: 'B1', x: 150, y: 200, z: 55 },
-                { id: 'BLK-005', name: 'Block B-1-2', material_type: 'Overburden', tonnes: 95000, CV: 0, Ash: 82, Moisture: 4.5, status: 'Mined', bench: 'B1', x: 160, y: 200, z: 55 },
-                { id: 'BLK-006', name: 'Block C-1-1', material_type: 'Thermal Coal', tonnes: 61000, CV: 25.1, Ash: 10.2, Moisture: 7.8, status: 'Available', bench: 'B3', x: 100, y: 220, z: 40 },
-                { id: 'BLK-007', name: 'Block C-1-2', material_type: 'Thermal Coal', tonnes: 48000, CV: 19.5, Ash: 16.2, Moisture: 10.5, status: 'Reserved', bench: 'B3', x: 110, y: 220, z: 40 },
-                { id: 'BLK-008', name: 'Block D-1-1', material_type: 'Overburden', tonnes: 180000, CV: 0, Ash: 88, Moisture: 4.2, status: 'Available', bench: 'B2', x: 150, y: 210, z: 45 },
-            ]);
+            setBlocks([]);
+            setError(e?.response?.data?.detail || e.message || 'Failed to load geology block data');
         } finally {
             setLoading(false);
         }
@@ -355,6 +367,12 @@ const GeologyViewer = ({ siteId }) => {
                 onFilterChange={handleFilterChange}
                 materialTypes={materialTypes}
             />
+
+            {error && (
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    {error}
+                </div>
+            )}
 
             {/* Statistics */}
             <StatsSummary blocks={filteredBlocks} />

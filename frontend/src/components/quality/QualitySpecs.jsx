@@ -13,6 +13,7 @@ import {
     Target, Plus, Save, Trash2, AlertTriangle, CheckCircle,
     Settings, ArrowRight, Package
 } from 'lucide-react';
+import { API_BASE_URL } from '../../services/api';
 
 // Sample quality fields for coal
 const QUALITY_FIELDS = [
@@ -165,6 +166,7 @@ const ProductSpecRow = ({ spec, onUpdate, onDelete, qualityFields }) => {
 const QualitySpecs = ({ siteId }) => {
     const [specs, setSpecs] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (siteId) {
@@ -174,50 +176,15 @@ const QualitySpecs = ({ siteId }) => {
 
     const fetchSpecs = async () => {
         setLoading(true);
+        setError('');
         try {
-            // Try to fetch from API, fall back to mock data
-            const res = await axios.get(`http://localhost:8000/quality/site/${siteId}/specs`);
+            const res = await axios.get(`${API_BASE_URL}/quality/site/${siteId}/specs`);
             // API returns { specs: [...] } or an array directly
             const data = res.data?.specs || res.data || [];
             setSpecs(Array.isArray(data) ? data : []);
         } catch (e) {
-            // Use sample data if API not available
-            setSpecs([
-                {
-                    id: 'spec-1',
-                    name: 'Export Grade A',
-                    destination: 'Port Terminal',
-                    compliance: 94,
-                    limits: {
-                        CV: { min: 23, max: 26 },
-                        Ash: { max: 12 },
-                        Moisture: { max: 10 },
-                        Sulphur: { max: 0.8 },
-                    },
-                    currentValues: {
-                        CV: 24.2,
-                        Ash: 11.5,
-                        Moisture: 8.3,
-                        Sulphur: 0.65,
-                    }
-                },
-                {
-                    id: 'spec-2',
-                    name: 'Domestic Power',
-                    destination: 'Power Station',
-                    compliance: 98,
-                    limits: {
-                        CV: { min: 20, max: 24 },
-                        Ash: { max: 15 },
-                        Moisture: { max: 12 },
-                    },
-                    currentValues: {
-                        CV: 22.1,
-                        Ash: 13.2,
-                        Moisture: 9.8,
-                    }
-                },
-            ]);
+            setSpecs([]);
+            setError(e?.response?.data?.detail || e.message || 'Failed to load quality specifications');
         } finally {
             setLoading(false);
         }
@@ -271,6 +238,12 @@ const QualitySpecs = ({ siteId }) => {
                     <Plus size={18} /> Add Product Spec
                 </button>
             </div>
+
+            {error && (
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    {error}
+                </div>
+            )}
 
             {/* Quality Fields Legend */}
             <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">

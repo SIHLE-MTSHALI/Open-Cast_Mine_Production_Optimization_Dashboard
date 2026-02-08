@@ -14,8 +14,9 @@ import {
     Calendar, CheckCircle, AlertCircle, Settings, RefreshCw, X
 } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 const ENTITY_TYPES = [
     { id: 'schedules', label: 'Schedules', icon: '📅' },

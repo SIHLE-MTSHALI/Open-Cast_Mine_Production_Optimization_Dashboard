@@ -195,8 +195,8 @@ const navSections = [
     {
         title: 'Monitoring',
         items: [
-            { id: 'geotech', label: 'Slope Stability', icon: Mountain, path: '/app/monitoring' },
-            { id: 'environment', label: 'Environment', icon: Wind, path: '/app/monitoring' }
+            { id: 'geotech', label: 'Slope Stability', icon: Mountain, path: '/app/monitoring', query: { tab: 'slope' } },
+            { id: 'environment', label: 'Environment', icon: Wind, path: '/app/monitoring', query: { tab: 'dust' } }
         ]
     },
     {
@@ -230,6 +230,7 @@ function NavItem({ item, active, collapsed, onClick }) {
     return (
         <button
             onClick={onClick}
+            aria-current={active ? 'page' : undefined}
             className={clsx(
                 'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200',
                 'relative group',
@@ -282,6 +283,11 @@ export function AppSidebar() {
      */
     const handleNavClick = (item) => {
         if (item.path) {
+            if (item.query) {
+                const params = new URLSearchParams(item.query);
+                navigate(`${item.path}?${params.toString()}`);
+                return;
+            }
             navigate(item.path);
         } else if (item.plannerTab) {
             navigate(`/app/planner?tab=${item.plannerTab}`);
@@ -293,6 +299,10 @@ export function AppSidebar() {
      */
     const isActiveItem = (item) => {
         if (item.path && location.pathname === item.path) {
+            if (item.query) {
+                const params = new URLSearchParams(location.search);
+                return Object.entries(item.query).every(([key, value]) => params.get(key) === String(value));
+            }
             return true;
         }
         if (item.plannerTab && location.pathname === '/app/planner') {
