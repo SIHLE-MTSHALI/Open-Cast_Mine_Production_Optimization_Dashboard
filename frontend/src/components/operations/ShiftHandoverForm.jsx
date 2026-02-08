@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { operationsAPI } from '../../services/api';
 
 const ShiftHandoverForm = ({ shiftId, onComplete, onCancel }) => {
   const [formData, setFormData] = useState({
     shift_id: shiftId,
-    outgoing_supervisor: '',
-    incoming_supervisor: '',
-    notes: '',
-    issues_flagged: false
+    outgoing_supervisor_name: '',
+    incoming_supervisor_name: '',
+    production_notes: '',
+    safety_notes: '',
+    equipment_notes: '',
+    tasks_incomplete: []
   });
+
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, shift_id: shiftId }));
+  }, [shiftId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,35 +38,41 @@ const ShiftHandoverForm = ({ shiftId, onComplete, onCancel }) => {
             <label>Outgoing Supervisor</label>
             <input
               required
-              value={formData.outgoing_supervisor}
-              onChange={e => setFormData({ ...formData, outgoing_supervisor: e.target.value })}
+              value={formData.outgoing_supervisor_name}
+              onChange={e => setFormData({ ...formData, outgoing_supervisor_name: e.target.value })}
             />
           </div>
           <div className="form-group">
             <label>Incoming Supervisor</label>
             <input
               required
-              value={formData.incoming_supervisor}
-              onChange={e => setFormData({ ...formData, incoming_supervisor: e.target.value })}
+              value={formData.incoming_supervisor_name}
+              onChange={e => setFormData({ ...formData, incoming_supervisor_name: e.target.value })}
             />
           </div>
           <div className="form-group">
-            <label>Notes / Issues</label>
+            <label>Production Notes</label>
             <textarea
               rows="4"
-              value={formData.notes}
-              onChange={e => setFormData({ ...formData, notes: e.target.value })}
+              value={formData.production_notes}
+              onChange={e => setFormData({ ...formData, production_notes: e.target.value })}
             />
           </div>
-          <div className="form-group checkbox">
-            <label>
-              <input
-                type="checkbox"
-                checked={formData.issues_flagged}
-                onChange={e => setFormData({ ...formData, issues_flagged: e.target.checked })}
-              />
-              Flag major issues?
-            </label>
+          <div className="form-group">
+            <label>Safety Notes</label>
+            <textarea
+              rows="2"
+              value={formData.safety_notes}
+              onChange={e => setFormData({ ...formData, safety_notes: e.target.value })}
+            />
+          </div>
+          <div className="form-group">
+            <label>Equipment Notes</label>
+            <textarea
+              rows="2"
+              value={formData.equipment_notes}
+              onChange={e => setFormData({ ...formData, equipment_notes: e.target.value })}
+            />
           </div>
 
           <div className="form-actions">

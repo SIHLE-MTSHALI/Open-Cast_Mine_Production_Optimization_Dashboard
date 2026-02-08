@@ -29,6 +29,7 @@ describe('API Service', () => {
     beforeEach(() => {
         vi.resetModules();
         localStorage.clear();
+        delete process.env.VITE_API_BASE_URL;
     });
 
     afterEach(() => {
@@ -37,20 +38,14 @@ describe('API Service', () => {
 
     describe('API Configuration', () => {
         it('should use environment variable for base URL when available', async () => {
-            // Set environment variable
             vi.stubEnv('VITE_API_BASE_URL', 'http://custom-api:9000');
-
-            // Re-import to pick up the new env var
-            const { default: axios } = await import('axios');
-
-            expect(axios.create).toBeDefined();
+            const api = await import('../services/api.js');
+            expect(api.API_BASE_URL).toBe('http://custom-api:9000');
         });
 
-        it('should fallback to localhost:8000 when no env var set', async () => {
-            // No need to set env var, default should be used
-            const { default: axios } = await import('axios');
-
-            expect(axios.create).toBeDefined();
+        it('should fallback to /api when no env var set', async () => {
+            const api = await import('../services/api.js');
+            expect(api.API_BASE_URL).toBe('/api');
         });
     });
 

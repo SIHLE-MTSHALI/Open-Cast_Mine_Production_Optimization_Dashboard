@@ -72,6 +72,11 @@ class ScheduleVersion(Base):
     def __repr__(self):
         return f"<ScheduleVersion {self.name} ({self.status})>"
 
+    def __init__(self, **kwargs):
+        # Legacy compatibility: older code passed calendar_id on schedule version.
+        kwargs.pop("calendar_id", None)
+        super().__init__(**kwargs)
+
 
 class Task(Base):
     """
@@ -162,3 +167,12 @@ class Task(Base):
             delta = self.end_datetime - self.start_datetime
             return delta.total_seconds() / 3600
         return 0.0
+
+    def __init__(self, **kwargs):
+        # Legacy aliases used by older tests/workflows
+        if "quantity_tonnes" in kwargs and "planned_quantity" not in kwargs:
+            kwargs["planned_quantity"] = kwargs.pop("quantity_tonnes")
+        activity_name = kwargs.pop("activity_name", None)
+        if activity_name and "notes" not in kwargs:
+            kwargs["notes"] = f"activity_name={activity_name}"
+        super().__init__(**kwargs)

@@ -156,9 +156,8 @@ class SyntheticDataGenerator:
     """
     
     def __init__(self, seed: Optional[int] = None):
-        if seed is not None:
-            random.seed(seed)
         self.seed = seed
+        self._rng = random.Random(seed)
     
     def get_config(self, region: Region) -> RegionalConfig:
         """Get configuration for a region."""
@@ -199,8 +198,8 @@ class SyntheticDataGenerator:
             hole_id = f"BH{i+1:04d}"
             
             # Random position with some clustering for realism
-            x = min_x + random.random() * width
-            y = min_y + random.random() * height
+            x = min_x + self._rng.random() * width
+            y = min_y + self._rng.random() * height
             
             # Terrain elevation at this point
             z = self._generate_terrain_elevation(x, y, config)
@@ -212,40 +211,42 @@ class SyntheticDataGenerator:
                 "northing": round(y, 2),
                 "elevation": round(z, 2),
                 "total_depth": 0.0,  # Will be updated
-                "date_drilled": (datetime.now() - timedelta(days=random.randint(30, 365))).isoformat(),
+                "date_drilled": (
+                    datetime.now() - timedelta(days=self._rng.randint(30, 365))
+                ).isoformat(),
                 "driller": f"Drill Crew {(i % 5) + 1}"
             }
             
             # Generate surveys (mostly vertical, slight deviation)
-            azimuth = random.uniform(0, 360)
-            dip = -90 + random.uniform(-2, 2)  # Near vertical
+            azimuth = self._rng.uniform(0, 360)
+            dip = -90 + self._rng.uniform(-2, 2)  # Near vertical
             
             depth = 0
             while depth < 200:  # Max depth
                 surveys.append({
                     "hole_id": hole_id,
                     "depth": round(depth, 2),
-                    "azimuth": round(azimuth + random.uniform(-5, 5), 1),
-                    "dip": round(dip + random.uniform(-1, 1), 1)
+                    "azimuth": round(azimuth + self._rng.uniform(-5, 5), 1),
+                    "dip": round(dip + self._rng.uniform(-1, 1), 1)
                 })
-                depth += random.uniform(20, 40)
+                depth += self._rng.uniform(20, 40)
             
             # Generate seam intervals and assays
-            current_depth = random.uniform(5, 20)  # Overburden
+            current_depth = self._rng.uniform(5, 20)  # Overburden
             
             for seam_idx, seam_name in enumerate(config.seam_names):
                 # Seam thickness
-                thickness = random.uniform(*config.seam_thickness_range)
+                thickness = self._rng.uniform(*config.seam_thickness_range)
                 
                 from_depth = current_depth
                 to_depth = from_depth + thickness
                 
                 # Quality values
-                cv = random.uniform(*config.cv_range)
-                ash = random.uniform(*config.ash_range)
-                moisture = random.uniform(*config.moisture_range)
-                sulphur = random.uniform(*config.sulphur_range)
-                volatile = random.uniform(*config.volatile_range)
+                cv = self._rng.uniform(*config.cv_range)
+                ash = self._rng.uniform(*config.ash_range)
+                moisture = self._rng.uniform(*config.moisture_range)
+                sulphur = self._rng.uniform(*config.sulphur_range)
+                volatile = self._rng.uniform(*config.volatile_range)
                 
                 assays.append({
                     "hole_id": hole_id,
@@ -258,17 +259,17 @@ class SyntheticDataGenerator:
                     "moisture_ar": round(moisture, 1),
                     "sulphur_adb": round(sulphur, 2),
                     "volatile_adb": round(volatile, 1),
-                    "density": round(config.coal_density + random.uniform(-0.1, 0.1), 2)
+                    "density": round(config.coal_density + self._rng.uniform(-0.1, 0.1), 2)
                 })
                 
                 # Interburden to next seam
                 if seam_idx < len(config.seam_names) - 1:
-                    interburden = random.uniform(*config.interburden_range)
+                    interburden = self._rng.uniform(*config.interburden_range)
                     current_depth = to_depth + interburden
                 else:
                     current_depth = to_depth
             
-            collar["total_depth"] = round(current_depth + random.uniform(5, 15), 2)
+            collar["total_depth"] = round(current_depth + self._rng.uniform(5, 15), 2)
             collars.append(collar)
         
         return {
@@ -321,7 +322,7 @@ class SyntheticDataGenerator:
         z += relief * 0.2 * math.sin(x * 0.015) * math.sin(y * 0.012)
         
         # Add some random micro-variation
-        z += random.uniform(-relief * 0.05, relief * 0.05)
+        z += self._rng.uniform(-relief * 0.05, relief * 0.05)
         
         return z
     
@@ -348,14 +349,14 @@ class SyntheticDataGenerator:
         seam_surfaces = {}
         
         # Initial depth below terrain
-        base_depth = random.uniform(15, 30)
+        base_depth = self._rng.uniform(15, 30)
         
         for seam_idx, seam_name in enumerate(config.seam_names):
             roof_points = []
             floor_points = []
             
             # Base thickness for this seam
-            base_thickness = random.uniform(*config.seam_thickness_range)
+            base_thickness = self._rng.uniform(*config.seam_thickness_range)
             
             x = min_x
             while x <= max_x:
@@ -372,14 +373,14 @@ class SyntheticDataGenerator:
                     # Depth to seam roof
                     depth_to_roof = base_depth + dip_offset
                     for prev_idx in range(seam_idx):
-                        depth_to_roof += random.uniform(*config.seam_thickness_range)
-                        depth_to_roof += random.uniform(*config.interburden_range)
+                        depth_to_roof += self._rng.uniform(*config.seam_thickness_range)
+                        depth_to_roof += self._rng.uniform(*config.interburden_range)
                     
                     # Add some natural variation
-                    depth_to_roof += random.uniform(-2, 2)
+                    depth_to_roof += self._rng.uniform(-2, 2)
                     
                     # Local thickness variation
-                    local_thickness = base_thickness + random.uniform(-0.5, 0.5)
+                    local_thickness = base_thickness + self._rng.uniform(-0.5, 0.5)
                     
                     roof_z = terrain_z - depth_to_roof
                     floor_z = roof_z - local_thickness
@@ -397,7 +398,7 @@ class SyntheticDataGenerator:
             }
             
             # Update base depth for next seam
-            base_depth += base_thickness + random.uniform(*config.interburden_range)
+            base_depth += base_thickness + self._rng.uniform(*config.interburden_range)
         
         return seam_surfaces
     
@@ -425,8 +426,8 @@ class SyntheticDataGenerator:
             angle = 2 * math.pi * i / num_points
             
             # Base radius with irregularity
-            r_x = width / 2 * (0.8 + 0.4 * random.random())
-            r_y = height / 2 * (0.8 + 0.4 * random.random())
+            r_x = width / 2 * (0.8 + 0.4 * self._rng.random())
+            r_y = height / 2 * (0.8 + 0.4 * self._rng.random())
             
             x = cx + r_x * math.cos(angle)
             y = cy + r_y * math.sin(angle)
@@ -500,7 +501,7 @@ class SyntheticDataGenerator:
         for corner_x, corner_y in corners:
             z = self._generate_terrain_elevation(corner_x, corner_y, config)
             # Dump surface is elevated above terrain
-            z += random.uniform(20, 40)
+            z += self._rng.uniform(20, 40)
             points.append((round(corner_x, 2), round(corner_y, 2), round(z, 2)))
         
         return points

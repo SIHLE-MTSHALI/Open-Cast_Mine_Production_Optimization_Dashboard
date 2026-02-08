@@ -171,8 +171,9 @@ class DXFService:
         result = DXFParseResult(success=False, filename=filename)
         
         try:
-            # ezdxf can read from a stream
-            stream = io.BytesIO(file_bytes)
+            # ezdxf expects a text stream for DXF content.
+            text = file_bytes.decode("utf-8", errors="ignore")
+            stream = io.StringIO(text)
             doc = ezdxf.read(stream)
             result.version = doc.dxfversion
             
@@ -563,10 +564,9 @@ class DXFService:
     
     def export_to_bytes(self, doc: "ezdxf.document.Drawing") -> bytes:
         """Export the document to bytes (for downloads)."""
-        stream = io.BytesIO()
+        stream = io.StringIO()
         doc.write(stream)
-        stream.seek(0)
-        return stream.read()
+        return stream.getvalue().encode("utf-8")
     
     # =========================================================================
     # HIGH-LEVEL EXPORT FUNCTIONS

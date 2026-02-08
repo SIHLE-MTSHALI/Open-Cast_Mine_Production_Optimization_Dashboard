@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { washPlantAPI } from '../../services/api';
 import {
     Factory, Settings, Plus, Trash2, Save, RefreshCw,
     ArrowRight, Percent, Droplets, Flame, TrendingUp
@@ -228,29 +228,17 @@ const WashPlantConfig = ({ siteId }) => {
     const fetchPlants = async () => {
         setLoading(true);
         try {
-            // Use consolidated wash-plants router
-            const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-            const res = await axios.get(`${API_BASE}/wash-plants/site/${siteId}`);
-            setPlants(res.data.wash_plants || res.data);
-            if (res.data.length > 0) {
-                setSelectedPlant(res.data[0]);
-                fetchWashTable(res.data[0].plant_id);
+            const sitePlants = await washPlantAPI.getPlants(siteId);
+            setPlants(sitePlants);
+            if (sitePlants.length > 0) {
+                setSelectedPlant(sitePlants[0]);
+                fetchWashTable(sitePlants[0].plant_id);
             }
         } catch (e) {
-            // Sample data
-            const samplePlants = [
-                { plant_id: 'plant-1', name: 'CHPP Main', status: 'Operational' }
-            ];
-            setPlants(samplePlants);
-            setSelectedPlant(samplePlants[0]);
-
-            // Sample wash table
-            setWashTable([
-                { feed_ash_min: 8, feed_ash_max: 12, product_yield: 75, product_ash: 10, product_cv: 25.5, reject_ash: 45 },
-                { feed_ash_min: 12, feed_ash_max: 16, product_yield: 65, product_ash: 11, product_cv: 24.2, reject_ash: 48 },
-                { feed_ash_min: 16, feed_ash_max: 20, product_yield: 55, product_ash: 12, product_cv: 23.0, reject_ash: 52 },
-                { feed_ash_min: 20, feed_ash_max: 25, product_yield: 45, product_ash: 13, product_cv: 21.5, reject_ash: 55 },
-            ]);
+            console.error('Failed to load wash plants:', e);
+            setPlants([]);
+            setSelectedPlant(null);
+            setWashTable([]);
         } finally {
             setLoading(false);
         }
@@ -258,10 +246,11 @@ const WashPlantConfig = ({ siteId }) => {
 
     const fetchWashTable = async (plantId) => {
         try {
-            const res = await axios.get(`http://localhost:8000/washplant/${plantId}/wash-table`);
-            setWashTable(res.data.rows);
+            const table = await washPlantAPI.getWashTable(plantId);
+            setWashTable(table.rows || []);
         } catch (e) {
-            console.warn('Could not fetch wash table');
+            console.warn('Could not fetch wash table', e);
+            setWashTable([]);
         }
     };
 
@@ -293,12 +282,10 @@ const WashPlantConfig = ({ siteId }) => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await axios.put(`http://localhost:8000/washplant/${selectedPlant.plant_id}/wash-table`, {
-                rows: washTable
-            });
-            await axios.put(`http://localhost:8000/washplant/${selectedPlant.plant_id}/parameters`, params);
+            await washPlantAPI.updateWashTable(selectedPlant.plant_id, washTable);
+            await washPlantAPI.updateParameters(selectedPlant.plant_id, params);
         } catch (e) {
-            console.log('Saved locally (API not available)');
+            console.error('Failed to save wash plant configuration:', e);
         } finally {
             setSaving(false);
         }

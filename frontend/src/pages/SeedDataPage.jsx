@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Database, Loader2, CheckCircle, XCircle, ArrowLeft, Factory, Truck, Crosshair, Users, Wind, Mountain } from 'lucide-react';
-import axios from 'axios';
 import { AppLayout } from '../components/layout/AppLayout';
-
-const API_BASE = 'http://localhost:8000';
+import { configAPI } from '../services/api';
 
 const SeedDataPage = () => {
     const navigate = useNavigate();
@@ -52,15 +50,15 @@ const SeedDataPage = () => {
         const progressInterval = simulateProgress();
 
         try {
-            const response = await axios.post(`${API_BASE}/config/seed-comprehensive-demo`);
+            const response = await configAPI.seedComprehensiveDemoData();
             clearInterval(progressInterval);
             setProgress(100);
             setCurrentStep('Complete!');
-            setResults(response.data);
+            setResults(response);
             setStatus('success');
         } catch (err) {
             clearInterval(progressInterval);
-            setError(err.response?.data?.detail || err.message || 'Seeding failed');
+            setError(err?.response?.data?.detail || err.message || 'Seeding failed');
             setStatus('error');
         }
     };
@@ -199,7 +197,7 @@ const SeedDataPage = () => {
 
                             {status === 'success' && (
                                 <button
-                                    onClick={() => navigate('/dashboard')}
+                                    onClick={() => navigate('/app/dashboard')}
                                     className="flex items-center gap-2 py-3 px-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-all"
                                 >
                                     View Dashboard

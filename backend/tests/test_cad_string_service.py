@@ -9,11 +9,6 @@ from unittest.mock import Mock, MagicMock, patch
 import uuid
 from datetime import datetime
 
-# Mock the database models
-import sys
-sys.modules['app.domain.models_surface'] = Mock()
-sys.modules['app.database'] = Mock()
-
 
 class TestCADStringService:
     """Tests for CADStringService."""

@@ -13,8 +13,9 @@ import {
     Target, TrendingUp, AlertTriangle, Check, ChevronDown, ChevronUp
 } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 // Quality field definitions
 const QUALITY_FIELDS = [

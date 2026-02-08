@@ -34,6 +34,12 @@ def create_version(version: ScheduleVersionCreate, db: Session = Depends(get_db)
     db.refresh(db_version)
     return db_version
 
+
+@router.get("/versions")
+def list_versions(db: Session = Depends(get_db)):
+    """List all schedule versions (legacy-compatible endpoint)."""
+    return db.query(models_scheduling.ScheduleVersion).all()
+
 @router.post("/versions/{version_id}/fork")
 def fork_version(version_id: str, new_name: str = None, db: Session = Depends(get_db)):
     # 1. Get Source
@@ -240,6 +246,24 @@ def delete_task(task_id: str, db: Session = Depends(get_db)):
     db.delete(task)
     db.commit()
     return {"message": "Task deleted"}
+
+
+@router.post("/versions/{version_id}/publish")
+def publish_version(version_id: str, db: Session = Depends(get_db)):
+    """Publish a schedule version."""
+    version = db.query(models_scheduling.ScheduleVersion).filter(
+        models_scheduling.ScheduleVersion.version_id == version_id
+    ).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Schedule version not found")
+
+    version.status = "Published"
+    db.commit()
+    db.refresh(version)
+    return {
+        "version_id": version.version_id,
+        "status": version.status
+    }
 
 
 @router.get("/versions/{version_id}/diagnostics")

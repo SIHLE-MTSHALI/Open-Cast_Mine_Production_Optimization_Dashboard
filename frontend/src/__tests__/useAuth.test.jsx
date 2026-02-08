@@ -9,13 +9,13 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
 
 // Mock the API module
-vi.mock('../services/api', () => ({
+jest.mock('../services/api', () => ({
     authAPI: {
-        login: vi.fn(),
-        register: vi.fn(),
-        getCurrentUser: vi.fn()
+        login: jest.fn(),
+        register: jest.fn(),
+        getCurrentUser: jest.fn()
     },
-    clearCache: vi.fn()
+    clearCache: jest.fn()
 }));
 
 // Import after mocking
@@ -28,7 +28,7 @@ import { authAPI, clearCache } from '../services/api';
 describe('Authentication State Management', () => {
     beforeEach(() => {
         localStorage.clear();
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     afterEach(() => {
@@ -167,7 +167,7 @@ describe('Role-Based Access Control', () => {
 describe('Login Flow', () => {
     beforeEach(() => {
         localStorage.clear();
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     it('should simulate successful login', async () => {
@@ -211,7 +211,7 @@ describe('Login Flow', () => {
 describe('Logout Flow', () => {
     beforeEach(() => {
         localStorage.clear();
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     it('should clear token and cache on logout', () => {
@@ -239,7 +239,7 @@ describe('Logout Flow', () => {
 describe('Registration Flow', () => {
     beforeEach(() => {
         localStorage.clear();
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     it('should simulate successful registration and auto-login', async () => {
@@ -279,7 +279,7 @@ describe('Registration Flow', () => {
 describe('Token Validation', () => {
     beforeEach(() => {
         localStorage.clear();
-        vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     it('should validate token on app load', async () => {

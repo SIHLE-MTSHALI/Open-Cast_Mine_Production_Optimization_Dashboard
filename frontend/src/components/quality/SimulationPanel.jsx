@@ -14,8 +14,9 @@ import {
     ChevronDown, ChevronUp, RefreshCw, Target
 } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = API_BASE_URL;
 
 // Confidence band display
 const ConfidenceBand = ({ label, p5, p50, p95, target, unit = '' }) => {

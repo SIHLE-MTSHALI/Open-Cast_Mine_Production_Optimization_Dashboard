@@ -51,9 +51,18 @@ const OperationsDashboard = () => {
         try {
             const now = new Date();
             const hour = now.getHours();
-            const shiftType = hour >= 6 && hour < 18 ? 'day' : 'night';
+            const isDayShift = hour >= 6 && hour < 18;
+            const shiftName = isDayShift ? 'Day Shift' : 'Night Shift';
+            const shiftStart = new Date(now);
+            const shiftEnd = new Date(now.getTime() + 12 * 60 * 60 * 1000);
 
-            await operationsAPI.startShift(currentSiteId, shiftType);
+            await operationsAPI.startShift({
+                site_id: currentSiteId,
+                shift_name: shiftName,
+                scheduled_start: shiftStart.toISOString(),
+                scheduled_end: shiftEnd.toISOString(),
+                supervisor_name: 'Current User'
+            });
             await loadActiveShift();
         } catch (error) {
             console.error('Failed to start shift:', error);
@@ -163,7 +172,7 @@ const OperationsDashboard = () => {
                                         <div className="bg-slate-800/50 rounded-lg p-4">
                                             <div className="text-xs text-slate-500">Started</div>
                                             <div className="text-lg font-medium text-white mt-1">
-                                                {activeShift.start_time ? new Date(activeShift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                                {activeShift.actual_start ? new Date(activeShift.actual_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                             </div>
                                         </div>
                                         <div className="bg-slate-800/50 rounded-lg p-4">
@@ -211,7 +220,12 @@ const OperationsDashboard = () => {
                                 <AnimatedCard.Header>
                                     <AnimatedCard.Title icon={ClipboardList}>Shift Log</AnimatedCard.Title>
                                 </AnimatedCard.Header>
-                                <ShiftLog siteId={currentSiteId} shiftId={activeShift?.shift_id} />
+                                <ShiftLog
+                                    siteId={currentSiteId}
+                                    activeShift={activeShift}
+                                    onShiftUpdate={loadActiveShift}
+                                    onRequestHandover={() => setShowHandover(true)}
+                                />
                             </AnimatedCard>
                         )}
                     </div>

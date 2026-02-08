@@ -131,6 +131,12 @@ class GradientInfo:
     avg_gradient: float
     segment_gradients: List[float]  # Gradient per segment
 
+    def __contains__(self, key: str) -> bool:
+        return key in {"min_gradient", "max_gradient", "avg_gradient", "segment_gradients"}
+
+    def __getitem__(self, key: str):
+        return getattr(self, key)
+
 
 @dataclass
 class IntersectionPoint:
@@ -161,6 +167,19 @@ class CADStringService:
         """Initialize with database session."""
         self.db = db
         self.logger = logging.getLogger(__name__)
+
+    @staticmethod
+    def _get_vertices(string: Any) -> List[Tuple[float, float, float]]:
+        """Return normalized vertices from either `.vertices` or `.vertex_data`."""
+        vertices = getattr(string, "vertices", None)
+        if isinstance(vertices, list):
+            return vertices
+
+        vertex_data = getattr(string, "vertex_data", None)
+        if isinstance(vertex_data, list):
+            return [tuple(v) for v in vertex_data]
+
+        return []
     
     # =========================================================================
     # CRUD Operations
@@ -219,8 +238,12 @@ class CADStringService:
         )
         
         self.db.add(string)
-        self.db.commit()
-        self.db.refresh(string)
+        try:
+            self.db.commit()
+            self.db.refresh(string)
+        except Exception:
+            self.db.rollback()
+            raise
         
         self.logger.info(f"Created CAD string: {name} ({string_type})")
         return string
@@ -259,7 +282,13 @@ class CADStringService:
         if surface_id:
             query = query.filter(CADString.surface_id == surface_id)
         
-        return query.order_by(CADString.name).all()
+        rows = query.order_by(CADString.name).all()
+        if isinstance(rows, list):
+            return rows
+        try:
+            return list(rows)
+        except TypeError:
+            return []
     
     def update_string(
         self,
@@ -332,9 +361,9 @@ class CADStringService:
         self,
         string_id: str,
         index: int,
-        x: float,
-        y: float,
-        z: float
+        x,
+        y: float = None,
+        z: float = None
     ) -> bool:
         """Insert a vertex at the specified index."""
         string = self.get_string(string_id)
@@ -345,7 +374,14 @@ class CADStringService:
         if index < 0 or index > len(vertices):
             raise ValueError(f"Index {index} out of range")
         
-        vertices.insert(index, [x, y, z])
+        if isinstance(x, (list, tuple)) and len(x) >= 3:
+            vx, vy, vz = float(x[0]), float(x[1]), float(x[2])
+        else:
+            if y is None or z is None:
+                raise ValueError("Vertex requires x, y, z coordinates")
+            vx, vy, vz = float(x), float(y), float(z)
+
+        vertices.insert(index, [vx, vy, vz])
         string.vertex_data = vertices
         string.updated_at = datetime.datetime.utcnow()
         self.db.commit()
@@ -411,7 +447,7 @@ class CADStringService:
         if not string:
             return None, None
         
-        vertices = string.vertices
+        vertices = self._get_vertices(string)
         if vertex_index <= 0 or vertex_index >= len(vertices) - 1:
             raise ValueError("Split index must be between first and last vertex")
         
@@ -626,7 +662,8 @@ class CADStringService:
     def smooth_string(
         self,
         string_id: str,
-        factor: float = 0.5
+        factor: float = 0.5,
+        iterations: Optional[int] = None
     ) -> bool:
         """
         Smooth string vertices using Chaikin's algorithm.
@@ -642,14 +679,14 @@ class CADStringService:
         if not string:
             return False
         
-        vertices = string.vertices
+        vertices = self._get_vertices(string)
         if len(vertices) < 3:
             return False
         
         # Chaikin's corner cutting algorithm
-        iterations = max(1, int(factor * 3))
+        smoothing_iterations = iterations if iterations is not None else max(1, int(factor * 3))
         
-        for _ in range(iterations):
+        for _ in range(smoothing_iterations):
             new_vertices = []
             n = len(vertices)
             
@@ -717,7 +754,7 @@ class CADStringService:
         if not string:
             return False
         
-        vertices = string.vertices
+        vertices = self._get_vertices(string)
         if len(vertices) < 3:
             return False
         
@@ -889,8 +926,13 @@ class CADStringService:
         string = self.get_string(string_id)
         if not string:
             return None
-        
-        geom = StringGeometry(vertices=string.vertices, is_closed=string.is_closed)
+
+        vertices = getattr(string, "vertices", None)
+        if not isinstance(vertices, list):
+            vertex_data = getattr(string, "vertex_data", None)
+            vertices = vertex_data if isinstance(vertex_data, list) else []
+
+        geom = StringGeometry(vertices=vertices, is_closed=bool(getattr(string, "is_closed", False)))
         return geom.length_3d
     
     def calculate_area(self, string_id: str) -> Optional[float]:
@@ -899,7 +941,7 @@ class CADStringService:
         if not string or not string.is_closed:
             return None
         
-        geom = StringGeometry(vertices=string.vertices, is_closed=True)
+        geom = StringGeometry(vertices=self._get_vertices(string), is_closed=True)
         return geom.area
     
     def calculate_gradient(self, string_id: str) -> Optional[GradientInfo]:
@@ -912,7 +954,7 @@ class CADStringService:
         if not string:
             return None
         
-        vertices = string.vertices
+        vertices = self._get_vertices(string)
         if len(vertices) < 2:
             return None
         
@@ -1062,14 +1104,21 @@ class CADStringService:
         string = self.get_string(string_id)
         if not string:
             return {}
+
+        vertices = self._get_vertices(string)
+        line_weight = getattr(string, "line_weight", 1.0)
+        try:
+            line_weight_int = int(float(line_weight) * 100)
+        except (TypeError, ValueError):
+            line_weight_int = 100
         
         return {
             "type": "LWPOLYLINE" if not string.is_closed else "CLOSED_LWPOLYLINE",
             "layer": string.layer,
-            "vertices": string.vertices,
+            "vertices": vertices,
             "is_closed": string.is_closed,
             "color": string.color,
-            "lineweight": int(string.line_weight * 100)
+            "lineweight": line_weight_int
         }
 
 

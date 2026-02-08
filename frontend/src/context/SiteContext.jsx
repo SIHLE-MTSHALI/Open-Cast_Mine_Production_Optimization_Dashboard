@@ -6,10 +6,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-
-// Use environment variable with fallback
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { configAPI } from '../services/api';
 
 const SiteContext = createContext(null);
 
@@ -43,8 +40,8 @@ export const SiteProvider = ({ children }) => {
     const fetchSites = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API_BASE}/config/sites`);
-            const siteList = Array.isArray(response.data) ? response.data : [response.data];
+            const data = await configAPI.getSites();
+            const siteList = Array.isArray(data) ? data : [data];
             setSites(siteList);
 
             // Auto-select first site if none selected

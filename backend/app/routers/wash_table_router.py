@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..domain.models_wash_table import WashTable, WashTableRow, WashPlantOperatingPoint
-from ..domain.models_flow import WashPlantConfig, FlowNode
+from ..domain.models_flow import WashPlantConfig, FlowNode, FlowNetwork
 from ..services.wash_plant_service import WashPlantService
 from pydantic import BaseModel
 from typing import List, Optional, Dict
@@ -42,6 +42,11 @@ class WashTableRowCreate(BaseModel):
     sequence: Optional[int] = None
 
 
+class WashTableRowsUpdate(BaseModel):
+    """Request body to replace all rows in a wash table."""
+    rows: List[Dict]
+
+
 class InterpolateRequest(BaseModel):
     """Request for interpolation at a cutpoint."""
     rd_cutpoint: float
@@ -69,6 +74,13 @@ class ProcessFeedRequest(BaseModel):
     feed_quality: Dict[str, float]
     period_id: Optional[str] = None
     schedule_version_id: Optional[str] = None
+
+
+class WashPlantConfigUpdate(BaseModel):
+    """Request body for updating wash plant runtime parameters."""
+    feed_capacity_tph: Optional[float] = None
+    cutpoint_selection_mode: Optional[str] = None
+    yield_adjustment_factor: Optional[float] = None
 
 
 # =============================================================================
@@ -171,6 +183,45 @@ def add_table_row(table_id: str, row: WashTableRowCreate, db: Session = Depends(
     db.commit()
     
     return {"row_id": db_row.row_id, "message": "Row added"}
+
+
+@router.put("/tables/{table_id}/rows")
+def replace_table_rows(table_id: str, payload: WashTableRowsUpdate, db: Session = Depends(get_db)):
+    """Replace all rows in a wash table."""
+    table = db.query(WashTable)\
+        .filter(WashTable.wash_table_id == table_id)\
+        .first()
+
+    if not table:
+        raise HTTPException(status_code=404, detail="Wash table not found")
+
+    db.query(WashTableRow)\
+        .filter(WashTableRow.wash_table_id == table_id)\
+        .delete()
+
+    created_rows = []
+    for index, row in enumerate(payload.rows):
+        db_row = WashTableRow(
+            row_id=str(uuid.uuid4()),
+            wash_table_id=table_id,
+            rd_cutpoint=float(row.get("rd_cutpoint", index + 1)),
+            cumulative_yield_fraction=float(row.get("cumulative_yield", row.get("product_yield", 0)) / (100.0 if row.get("product_yield") is not None else 1.0)),
+            product_quality_vector={
+                "Ash": row.get("product_ash", 0),
+                "CV": row.get("product_cv", 0)
+            },
+            reject_quality_vector={
+                "Ash": row.get("reject_ash", 0),
+                "feed_ash_min": row.get("feed_ash_min"),
+                "feed_ash_max": row.get("feed_ash_max")
+            },
+            sequence=index
+        )
+        db.add(db_row)
+        created_rows.append(db_row)
+
+    db.commit()
+    return {"message": "Rows replaced", "row_count": len(created_rows)}
 
 
 @router.delete("/tables/{table_id}")
@@ -351,6 +402,39 @@ def get_wash_plant_config(node_id: str, db: Session = Depends(get_db)):
         "feed_capacity_tph": config.feed_capacity_tph,
         "cutpoint_selection_mode": config.cutpoint_selection_mode,
         "default_cutpoint_rd": getattr(config, 'default_cutpoint_rd', None),
+        "yield_adjustment_factor": config.yield_adjustment_factor
+    }
+
+
+@router.put("/{node_id}/config")
+def update_wash_plant_config(
+    node_id: str,
+    updates: WashPlantConfigUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update wash plant configuration parameters."""
+    config = db.query(WashPlantConfig)\
+        .filter(WashPlantConfig.node_id == node_id)\
+        .first()
+
+    if not config:
+        raise HTTPException(status_code=404, detail="Wash plant config not found")
+
+    if updates.feed_capacity_tph is not None:
+        config.feed_capacity_tph = updates.feed_capacity_tph
+    if updates.cutpoint_selection_mode is not None:
+        config.cutpoint_selection_mode = updates.cutpoint_selection_mode
+    if updates.yield_adjustment_factor is not None:
+        config.yield_adjustment_factor = updates.yield_adjustment_factor
+
+    db.commit()
+    db.refresh(config)
+
+    return {
+        "node_id": node_id,
+        "wash_table_id": config.wash_table_id,
+        "feed_capacity_tph": config.feed_capacity_tph,
+        "cutpoint_selection_mode": config.cutpoint_selection_mode,
         "yield_adjustment_factor": config.yield_adjustment_factor
     }
 

@@ -178,6 +178,10 @@ class ASCIIGridService:
     
     def _parse_xyz_content(self, content: str, result: XYZParseResult):
         """Parse XYZ content."""
+        if not content or not content.strip():
+            result.errors.append("File is empty")
+            return
+
         lines = content.strip().split('\n')
         
         if not lines:
@@ -195,6 +199,10 @@ class ASCIIGridService:
         else:
             parts = first_line.split()
         
+        if not parts:
+            result.errors.append("File is empty")
+            return
+
         try:
             float(parts[0])
         except ValueError:

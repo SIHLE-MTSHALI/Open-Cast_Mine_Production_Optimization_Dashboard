@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import PlannerWorkspace from './pages/PlannerWorkspace';
-import LoginPage from './pages/LoginPage';
-import LandingPage from './pages/LandingPage';
-import SiteDashboard from './pages/SiteDashboard';
-import FleetDashboard from './pages/FleetDashboard';
-import DrillBlastDashboard from './pages/DrillBlastDashboard';
-import OperationsDashboard from './pages/OperationsDashboard';
-import MonitoringDashboard from './pages/MonitoringDashboard';
-import SeedDataPage from './pages/SeedDataPage';
-import NotFoundPage from './pages/NotFoundPage';
+const PlannerWorkspace = lazy(() => import('./pages/PlannerWorkspace'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const SiteDashboard = lazy(() => import('./pages/SiteDashboard'));
+const FleetDashboard = lazy(() => import('./pages/FleetDashboard'));
+const DrillBlastDashboard = lazy(() => import('./pages/DrillBlastDashboard'));
+const OperationsDashboard = lazy(() => import('./pages/OperationsDashboard'));
+const MonitoringDashboard = lazy(() => import('./pages/MonitoringDashboard'));
+const SeedDataPage = lazy(() => import('./pages/SeedDataPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 import { SiteProvider } from './context/SiteContext';
 import { ToastProvider } from './context/ToastContext';
 
@@ -60,7 +60,14 @@ function App() {
     <BrowserRouter>
       <SiteProvider>
         <ToastProvider>
-          <Routes>
+          <Suspense
+            fallback={
+              <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-slate-300">
+                Loading...
+              </div>
+            }
+          >
+            <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
 
@@ -154,7 +161,8 @@ function App() {
 
             {/* 404 Page */}
             <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+            </Routes>
+          </Suspense>
         </ToastProvider>
       </SiteProvider>
     </BrowserRouter>
@@ -162,4 +170,3 @@ function App() {
 }
 
 export default App;
-

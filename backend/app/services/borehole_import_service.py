@@ -39,6 +39,12 @@ class ImportValidationError:
 
 
 @dataclass
+class ValidationError(ImportValidationError):
+    """Backward-compatible alias for legacy tests/imports."""
+    pass
+
+
+@dataclass
 class BoreholeImportResult:
     """Result of a borehole import operation."""
     success: bool
@@ -85,7 +91,26 @@ class IntervalRecord:
     seam_name: Optional[str] = None
     lithology_code: Optional[str] = None
     quality_values: Dict[str, float] = field(default_factory=dict)
+    seam: Optional[str] = None
+    quality_data: Dict[str, float] = field(default_factory=dict)
     row_number: int = 0
+
+    def __post_init__(self):
+        # Keep backward compatibility with older field names used in tests/tools.
+        if self.seam is not None and self.seam_name is None:
+            self.seam_name = self.seam
+        if self.seam_name is not None and self.seam is None:
+            self.seam = self.seam_name
+
+        if self.quality_data and not self.quality_values:
+            self.quality_values = dict(self.quality_data)
+        elif self.quality_values and not self.quality_data:
+            self.quality_data = dict(self.quality_values)
+
+    @property
+    def thickness(self) -> float:
+        """Interval thickness in depth units."""
+        return self.to_depth - self.from_depth
 
 
 class BoreholeImportService:
@@ -111,8 +136,9 @@ class BoreholeImportService:
         self,
         content: bytes,
         filename: str,
-        column_mappings: Optional[Dict[str, str]] = None
-    ) -> Tuple[List[CollarRecord], List[ImportValidationError]]:
+        column_mappings: Optional[Dict[str, str]] = None,
+        return_errors: bool = False
+    ):
         """
         Parse a collar file and extract records.
         
@@ -127,11 +153,12 @@ class BoreholeImportService:
         result = self.parser.parse_bytes(content, filename)
         
         if not result.success:
-            return [], [ImportValidationError(
+            empty_errors = [ImportValidationError(
                 hole_id="",
                 field="",
                 message=f"Failed to parse file: {result.errors[0] if result.errors else 'Unknown error'}"
             )]
+            return ([], empty_errors) if return_errors else []
         
         # Build mappings
         mappings = self._build_collar_mappings(result, column_mappings)
@@ -153,23 +180,25 @@ class BoreholeImportService:
                     row_number=row.row_number
                 ))
         
-        return records, errors
+        return (records, errors) if return_errors else records
     
     def parse_survey_file(
         self,
         content: bytes,
         filename: str,
-        column_mappings: Optional[Dict[str, str]] = None
-    ) -> Tuple[List[SurveyRecord], List[ImportValidationError]]:
+        column_mappings: Optional[Dict[str, str]] = None,
+        return_errors: bool = False
+    ):
         """Parse a survey file and extract records."""
         result = self.parser.parse_bytes(content, filename)
         
         if not result.success:
-            return [], [ImportValidationError(
+            empty_errors = [ImportValidationError(
                 hole_id="",
                 field="",
                 message=f"Failed to parse file: {result.errors[0] if result.errors else 'Unknown error'}"
             )]
+            return ([], empty_errors) if return_errors else []
         
         mappings = self._build_survey_mappings(result, column_mappings)
         
@@ -189,15 +218,16 @@ class BoreholeImportService:
                     row_number=row.row_number
                 ))
         
-        return records, errors
+        return (records, errors) if return_errors else records
     
     def parse_assay_file(
         self,
         content: bytes,
         filename: str,
         column_mappings: Optional[Dict[str, str]] = None,
-        quality_columns: Optional[List[str]] = None
-    ) -> Tuple[List[IntervalRecord], List[ImportValidationError]]:
+        quality_columns: Optional[List[str]] = None,
+        return_errors: bool = False
+    ):
         """
         Parse an assay file and extract records.
         
@@ -207,11 +237,12 @@ class BoreholeImportService:
         result = self.parser.parse_bytes(content, filename)
         
         if not result.success:
-            return [], [ImportValidationError(
+            empty_errors = [ImportValidationError(
                 hole_id="",
                 field="",
                 message=f"Failed to parse file: {result.errors[0] if result.errors else 'Unknown error'}"
             )]
+            return ([], empty_errors) if return_errors else []
         
         mappings = self._build_assay_mappings(result, column_mappings)
         
@@ -237,7 +268,7 @@ class BoreholeImportService:
                     row_number=row.row_number
                 ))
         
-        return records, errors
+        return (records, errors) if return_errors else records
     
     def _build_collar_mappings(
         self, 
@@ -521,6 +552,39 @@ class BoreholeImportService:
                     ))
         
         return errors
+
+    def validate_surveys(
+        self,
+        collar: CollarRecord,
+        surveys: List[SurveyRecord]
+    ) -> List[ImportValidationError]:
+        """Backward-compatible wrapper for survey validation."""
+        return self.validate_records([collar], surveys, [])
+
+    def validate_intervals(
+        self,
+        collar: CollarRecord,
+        intervals: List[IntervalRecord]
+    ) -> List[ImportValidationError]:
+        """Backward-compatible wrapper for interval depth validation."""
+        return self.validate_records([collar], [], intervals)
+
+    def validate_interval_order(
+        self,
+        intervals: List[IntervalRecord]
+    ) -> List[ImportValidationError]:
+        """Validate interval ordering independently from collar checks."""
+        errors: List[ImportValidationError] = []
+        for interval in intervals:
+            if interval.from_depth >= interval.to_depth:
+                errors.append(ImportValidationError(
+                    hole_id=interval.hole_id,
+                    field="From/To",
+                    message=f"From depth {interval.from_depth}m >= To depth {interval.to_depth}m",
+                    row_number=interval.row_number,
+                    severity="error"
+                ))
+        return errors
     
     # =========================================================================
     # 3D TRACE CALCULATION
@@ -530,7 +594,8 @@ class BoreholeImportService:
         self,
         collar: CollarRecord,
         surveys: List[SurveyRecord],
-        interval_meters: float = 5.0
+        interval_meters: float = 5.0,
+        include_depth: bool = False
     ) -> List[Tuple[float, float, float, float]]:
         """
         Calculate 3D trace points for a borehole.
@@ -607,8 +672,12 @@ class BoreholeImportService:
             current_depth = s2.depth
             
             trace_points.append((current_depth, current_e, current_n, current_z))
-        
-        return trace_points
+
+        if include_depth:
+            return trace_points
+
+        # Backward-compatible shape: (easting, northing, elevation)
+        return [(e, n, z) for _, e, n, z in trace_points]
     
     # =========================================================================
     # IMPORT METHODS
@@ -649,7 +718,7 @@ class BoreholeImportService:
         
         # Parse collars
         collars, collar_errors = self.parse_collar_file(
-            collar_content, collar_filename, collar_mappings
+            collar_content, collar_filename, collar_mappings, return_errors=True
         )
         result.errors.extend([e for e in collar_errors if e.severity == "error"])
         result.warnings.extend([e for e in collar_errors if e.severity == "warning"])
@@ -666,7 +735,7 @@ class BoreholeImportService:
         surveys: List[SurveyRecord] = []
         if survey_content:
             surveys, survey_errors = self.parse_survey_file(
-                survey_content, survey_filename or "survey.csv", survey_mappings
+                survey_content, survey_filename or "survey.csv", survey_mappings, return_errors=True
             )
             result.errors.extend([e for e in survey_errors if e.severity == "error"])
             result.warnings.extend([e for e in survey_errors if e.severity == "warning"])
@@ -676,7 +745,7 @@ class BoreholeImportService:
         if assay_content:
             intervals, interval_errors = self.parse_assay_file(
                 assay_content, assay_filename or "assay.csv", 
-                assay_mappings, quality_columns
+                assay_mappings, quality_columns, return_errors=True
             )
             result.errors.extend([e for e in interval_errors if e.severity == "error"])
             result.warnings.extend([e for e in interval_errors if e.severity == "warning"])
@@ -712,7 +781,7 @@ class BoreholeImportService:
             
             for collar in collars:
                 hole_surveys = surveys_by_hole.get(collar.hole_id, [])
-                trace_points = self.calculate_3d_trace(collar, hole_surveys)
+                trace_points = self.calculate_3d_trace(collar, hole_surveys, include_depth=True)
                 self._create_trace_records(collar_map[collar.hole_id], trace_points)
                 result.traces_calculated += len(trace_points)
             
