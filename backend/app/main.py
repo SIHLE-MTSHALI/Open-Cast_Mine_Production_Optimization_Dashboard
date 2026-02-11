@@ -106,9 +106,9 @@ from .domain.models_surface_history import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events for the application."""
-    # Create all database tables on startup
-    Base.metadata.create_all(bind=engine)
-    print(f"Database initialized with {len(Base.metadata.tables)} tables")
+    # Run database migrations via Alembic (preferred for production/dev)
+    # Falls back to Base.metadata.create_all for test environments
+    _run_database_setup()
     
     # Auto-seed comprehensive demo data if Equipment table is empty
     from .database import SessionLocal
@@ -127,6 +127,42 @@ async def lifespan(app: FastAPI):
     
     yield
     # Cleanup on shutdown (if needed)
+
+
+def _run_database_setup():
+    """Run Alembic migrations programmatically.
+    
+    Attempts to run 'alembic upgrade head' to apply all pending migrations.
+    Falls back to Base.metadata.create_all() if Alembic config is not found
+    (e.g., in test environments or first-time setup before migrations exist).
+    """
+    import os
+
+    # Locate alembic.ini relative to this file (backend/app/main.py -> backend/alembic.ini)
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    alembic_ini = os.path.join(backend_dir, "alembic.ini")
+
+    if os.path.exists(alembic_ini):
+        try:
+            from alembic.config import Config
+            from alembic import command
+
+            alembic_cfg = Config(alembic_ini)
+            # Ensure script_location is absolute so it works from any cwd
+            alembic_cfg.set_main_option(
+                "script_location",
+                os.path.join(backend_dir, "migrations")
+            )
+            command.upgrade(alembic_cfg, "head")
+            print(f"Database migrations applied (Alembic). {len(Base.metadata.tables)} tables registered.")
+        except Exception as e:
+            print(f"Alembic migration failed ({e}), falling back to create_all...")
+            Base.metadata.create_all(bind=engine)
+            print(f"Database initialized with {len(Base.metadata.tables)} tables (create_all fallback)")
+    else:
+        # No alembic.ini found - use create_all (test environments, CI)
+        Base.metadata.create_all(bind=engine)
+        print(f"Database initialized with {len(Base.metadata.tables)} tables (no alembic.ini)")
 
 
 app = FastAPI(
