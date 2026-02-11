@@ -10,7 +10,7 @@
 
 **Open-Cast Mine Production Scheduling and Optimization System**
 
-[Quick Start](#-quick-start-for-beginners) • [All Features](#-complete-feature-list) • [Setup Options](#-setup-options) • [Usage Guide](#-detailed-usage-guide) • [API Reference](#-api-reference) • [Troubleshooting](#-troubleshooting)
+[Quick Start](#-quick-start-for-beginners) • [All Features](#-complete-feature-list) • [Visual Validation](#-end-to-end-visual-validation-checklist) • [Setup Options](#-setup-options) • [Usage Guide](#-detailed-usage-guide) • [API Reference](#-api-reference) • [Limitations](#-current-limitations--known-gaps-february-2026) • [Future Work](#-future-work-roadmap-to-commercial-readiness) • [Troubleshooting](#-troubleshooting)
 
 </div>
 
@@ -30,6 +30,49 @@ MineOpt Pro is a **comprehensive, full-stack web application** designed for open
 - **🔄 Integrate with external systems** (SCADA, SAP, Oracle)
 
 Whether you're a complete beginner or an experienced developer, this guide will help you get MineOpt Pro running on your machine.
+
+---
+
+## 📍 Read This First (Important)
+
+This README is intentionally long and operational. It is designed so:
+
+- a non-technical planner can install and run the system
+- a technical user can verify architecture, APIs, and module boundaries
+- both users can understand current limitations and in-progress work
+
+### Current-State Promise (as of February 8, 2026)
+
+MineOpt Pro has broad backend and frontend coverage, and the product runs locally with meaningful workflows.  
+At the same time, some advanced workflows are still in hardening and integration phases.
+
+To keep this honest and useful:
+
+- each major section includes practical verification guidance
+- limitations are documented in a dedicated section
+- future work is explicitly mapped for commercial-product readiness
+
+### Visual Confirmation Legend Used in This Guide
+
+You will repeatedly see these validation markers:
+
+- `✅` means expected successful state
+- `⚠️` means warning or partial state that still allows progress
+- `❌` means blocked state requiring action before proceeding
+- `👀 You should see` means exact visual cue to confirm
+
+### Minimum Success Criteria for a "Good Install"
+
+You should be able to verify all of the following:
+
+1. Backend health endpoint returns healthy response.
+2. Backend API docs open in browser.
+3. Frontend loads and shows landing/login flow.
+4. You can register/login and reach dashboard.
+5. You can open planner and navigate tabs.
+6. You can run seed data and see new entities in planner modules.
+
+If any one of these fails, jump to [🐛 Troubleshooting](#-troubleshooting) before continuing.
 
 ---
 
@@ -85,6 +128,15 @@ cd MineOpt-pro
 
 **What this does:** Downloads all the project files from GitHub to your computer.
 
+**👀 You should see:**
+- `Cloning into 'MineOpt-pro'...`
+- A completed download summary with object counts.
+- No authentication error if repository is public.
+
+**✅ Step 1 complete when:**
+- A folder named `MineOpt-pro` exists on your machine.
+- Running `dir` (Windows) or `ls` (Mac/Linux) in the parent directory shows that folder.
+
 ---
 
 ### Step 2: Set Up the Backend (Python Server)
@@ -132,6 +184,15 @@ pip install -r requirements.txt
 - PyKrige (geostatistics)
 - And many more...
 
+**👀 You should see:**
+- Download/install logs for Python packages.
+- Final message similar to `Successfully installed ...`
+- No fatal errors about missing compiler/toolchain.
+
+**✅ Step 2 complete when:**
+- Your prompt still shows `(venv)`.
+- `python -c "import fastapi; print('ok')"` prints `ok`.
+
 ---
 
 ### Step 3: Start the Backend Server
@@ -157,6 +218,14 @@ INFO:     Application startup complete.
 
 > **📌 Tip:** You can verify the backend is working by opening a web browser and going to: http://localhost:8000/docs - You should see the interactive API documentation.
 
+**👀 You should see in browser:**
+- Swagger UI page title similar to `MineOpt Pro Enterprise API`.
+- Endpoints grouped by tags (auth, schedule, quality, flow, raster, etc.).
+
+**✅ Step 3 complete when:**
+- `http://localhost:8000/health` returns JSON with healthy status.
+- Backend terminal keeps running without repeated crash/restart loops.
+
 ---
 
 ### Step 4: Set Up the Frontend (New Terminal Window)
@@ -165,7 +234,7 @@ INFO:     Application startup complete.
 
 ```bash
 # Navigate to the project's frontend folder
-cd Documents\Open-Cast_Mine_Production_Optimization_Dashboard\frontend
+cd frontend
 
 # Install all JavaScript dependencies (this may take 2-5 minutes)
 npm install
@@ -177,6 +246,14 @@ npm install
 - Leaflet (interactive maps)
 - Recharts (charts and graphs)
 - And more...
+
+**👀 You should see:**
+- `added ... packages` (or equivalent npm success output)
+- No `npm ERR!` fatal line at the end
+
+**✅ Step 4 complete when:**
+- `node_modules` exists in the `frontend` folder.
+- `npm run dev` is available without script-not-found errors.
 
 ---
 
@@ -196,6 +273,13 @@ npm run dev
   ➜  press h + enter to show help
 ```
 
+**👀 You should see:**
+- A local URL, usually `http://localhost:5173/`.
+- No immediate Vite crash after startup.
+
+**✅ Step 5 complete when:**
+- Opening the local URL loads the app shell (not a browser error page).
+
 ---
 
 ### Step 6: Open the Application
@@ -203,6 +287,10 @@ npm run dev
 1. Open your web browser (Chrome, Firefox, or Edge recommended)
 2. Go to: **http://localhost:5173**
 3. You should see the MineOpt Pro landing page!
+
+**👀 You should see on screen:**
+- A branded landing page with a start/login call-to-action.
+- No blank white page and no fatal red overlay.
 
 **🎉 Congratulations! MineOpt Pro is now running on your computer!**
 
@@ -218,6 +306,14 @@ npm run dev
 4. Click **"Register"**
 5. You'll be automatically logged in and see the Site Dashboard
 
+**👀 You should see on screen:**
+- Authentication form accepts your input.
+- After submit, browser redirects to `/app/dashboard`.
+- Sidebar/menu appears with planning and operations entries.
+
+**✅ Step 7 complete when:**
+- Refreshing dashboard keeps you logged in (token stored).
+
 ---
 
 ### Step 8: Generate Sample Data (Recommended for Testing)
@@ -228,11 +324,119 @@ To see the application's features in action with demo data:
 2. Click the **"Seed Data"** button in the toolbar
 3. This will generate sample sites, equipment, schedules, and more
 
+**👀 You should see on screen:**
+- Success toast/notification after seed operation.
+- Planner modules show populated entities (resources, areas, schedules, etc.).
+
+**✅ Step 8 complete when:**
+- Planner tabs show non-empty datasets.
+- Dashboard cards/summary values are no longer all empty.
+
+---
+
+## ✅ End-to-End Visual Validation Checklist
+
+Use this checklist immediately after installation.  
+This section is written so a user can confirm success by looking at the screen, without guessing.
+
+### A. Startup Validation (System Health)
+
+| Check | Where to look | Expected visual result | Status |
+|------|------|------|------|
+| Backend process | Backend terminal | `Application startup complete` and no crash loop | ⬜ |
+| Backend health URL | Browser → `http://localhost:8000/health` | JSON response with `"status": "healthy"` | ⬜ |
+| API docs | Browser → `http://localhost:8000/docs` | Swagger UI loads with endpoint groups | ⬜ |
+| Frontend process | Frontend terminal | Vite local URL line present | ⬜ |
+| Frontend app | Browser → `http://localhost:5173` | Landing page loads with action buttons | ⬜ |
+
+### B. Authentication Validation
+
+| Check | Action | Expected visual result | Status |
+|------|------|------|------|
+| Register user | Open register form and submit | Redirect to dashboard | ⬜ |
+| Login persistence | Refresh page | User remains logged in | ⬜ |
+| Protected routing | Open `/app/dashboard` without login in fresh session | Redirect to `/login` if not authenticated | ⬜ |
+
+### C. Dashboard Validation
+
+| Check | Action | Expected visual result | Status |
+|------|------|------|------|
+| Dashboard loads | Open `/app/dashboard` | KPI cards and summary panels visible | ⬜ |
+| Navigation menu | Inspect sidebar | Planning, Operations, Monitoring, Configuration links visible | ⬜ |
+| Seed data entry | Open Seed Data page | Seed controls and status feedback visible | ⬜ |
+
+### D. Planner Navigation Validation
+
+Open each route and confirm the module renders.
+
+| Route | Expected visual result | Status |
+|------|------|------|
+| `/app/planner?tab=spatial` | Spatial/3D planning workspace and related controls | ⬜ |
+| `/app/planner?tab=gantt` | Gantt scheduling view with timeline/task region | ⬜ |
+| `/app/planner?tab=schedule-control` | Schedule control panel with run controls | ⬜ |
+| `/app/planner?tab=reporting` | Reports/analytics module | ⬜ |
+| `/app/planner?tab=flow-editor` | Flow network editor panel | ⬜ |
+| `/app/planner?tab=product-specs` | Product and quality specifications UI | ⬜ |
+| `/app/planner?tab=resources` | Resource management content | ⬜ |
+| `/app/planner?tab=geology` | Geology/block model content | ⬜ |
+| `/app/planner?tab=data` | Stockpile/data tab content | ⬜ |
+| `/app/planner?tab=import` | Import workflow UI | ⬜ |
+| `/app/planner?tab=integrations` | Integration mapping/config UI | ⬜ |
+| `/app/planner?tab=settings` | Settings panel | ⬜ |
+
+### E. Operations Module Validation
+
+| Route | Expected visual result | Status |
+|------|------|------|
+| `/app/fleet` | Fleet dashboard widgets/panels visible | ⬜ |
+| `/app/drill-blast` | Drill & blast page content visible | ⬜ |
+| `/app/operations` | Shift operations and handover content visible | ⬜ |
+| `/app/monitoring` | Monitoring dashboard content visible | ⬜ |
+
+### F. Data Import and File Workflow Validation
+
+1. Open planner import tab.
+2. Upload a small CSV test file.
+3. Confirm preview renders.
+4. Confirm column mapping/validation view appears (if required by import type).
+
+**👀 You should see:**
+- file recognized in uploader
+- preview rows or parse summary
+- no unhandled frontend exception
+
+### G. API and Data Service Validation
+
+Use Swagger (`/docs`) and run quick checks:
+
+1. `GET /files/formats` returns supported formats list.
+2. `GET /crs/systems` returns CRS options.
+3. `GET /raster/formats` returns available raster driver summary.
+
+**👀 You should see:**
+- HTTP 200 responses
+- JSON payload (not HTML error page)
+
+### H. Final Acceptance Check
+
+Mark installation successful only if all are true:
+
+- You can log in and navigate every main menu area.
+- Planner tabs open through URL query navigation.
+- Seed data creates visible planner entities.
+- API docs and health endpoints respond.
+- No critical blank screens or repeated crash loops.
+
+If any line fails, go directly to [🐛 Troubleshooting](#-troubleshooting) and resolve before production-style use.
+
 ---
 
 ## 📋 Complete Feature List
 
 MineOpt Pro includes **13+ major modules** with **50+ features**. Here's everything you can do:
+
+> **Status note:** This list is the full platform capability map. Some items are fully operational today and some are in partial/hardening state.  
+> Use [⚠️ Current Limitations & Known Gaps](#-current-limitations--known-gaps-february-2026) for the transparent maturity view.
 
 ### 🏠 Dashboard & Overview
 
@@ -628,6 +832,270 @@ Configure site and system settings.
 
 ---
 
+## 🧭 Feature Access Guide (Menu-by-Menu, Screen-by-Screen)
+
+This section explains exactly how a user reaches each major feature and what they should see when it is working.
+
+### A. Home and Dashboard
+
+Path:
+
+1. Login
+2. Open sidebar
+3. Click `Dashboard`
+
+Expected visuals:
+
+- KPI/summary cards at top
+- active context panels (site/schedule context)
+- navigation still visible on left
+
+If something is wrong:
+
+- blank cards: run seed data first
+- redirect to login: token/auth session expired
+
+### B. Planner entry point
+
+Path:
+
+1. Sidebar → `3D Spatial View` (or any planning tab shortcut)
+2. URL should become `/app/planner?tab=...`
+
+Expected visuals:
+
+- planner header region
+- tab-specific module content area
+- no hard browser error overlay
+
+### C. Planner tab-by-tab guide
+
+#### C1. Spatial View
+
+Access:
+
+- Sidebar → Planning → `3D Spatial View`
+- URL: `/app/planner?tab=spatial`
+
+Expected visuals:
+
+- spatial panel/canvas area
+- spatial controls/toolbar blocks
+- selectable planning artifacts (depending on seed/import state)
+
+#### C2. Gantt Schedule
+
+Access:
+
+- Sidebar → Planning → `Gantt Schedule`
+- URL: `/app/planner?tab=gantt`
+
+Expected visuals:
+
+- timeline-style scheduling view
+- rows/blocks area for tasks
+- schedule-related controls
+
+#### C3. Schedule Control
+
+Access:
+
+- Sidebar → Planning → `Schedule Control`
+- URL: `/app/planner?tab=schedule-control`
+
+Expected visuals:
+
+- controls for schedule operations
+- status/diagnostic feedback area
+- run/fork/switch style control actions
+
+#### C4. Reports & Analytics
+
+Access:
+
+- Sidebar → Planning → `Reports & Analytics`
+- URL: `/app/planner?tab=reporting`
+
+Expected visuals:
+
+- report widgets/tables/charts or report controls
+- export/report interaction options where available
+
+#### C5. Flow Network
+
+Access:
+
+- Sidebar → Configuration → `Flow Network`
+- URL: `/app/planner?tab=flow-editor`
+
+Expected visuals:
+
+- flow network editor area
+- node/arc configuration controls
+
+#### C6. Product Specs
+
+Access:
+
+- Sidebar → Configuration → `Product Specs`
+- URL: `/app/planner?tab=product-specs`
+
+Expected visuals:
+
+- quality/product specification controls
+- save/update interaction controls
+
+#### C7. Resources
+
+Access:
+
+- Sidebar → Configuration → `Resources`
+- URL: `/app/planner?tab=resources`
+
+Expected visuals:
+
+- resource list/config panel
+- editable fields for resource-level parameters
+
+#### C8. Block Model
+
+Access:
+
+- Sidebar → Configuration → `Block Model`
+- URL: `/app/planner?tab=geology`
+
+Expected visuals:
+
+- geology/block model module content
+- entity/layer selection controls
+
+#### C9. Stockpiles
+
+Access:
+
+- Sidebar → Configuration → `Stockpiles`
+- URL: `/app/planner?tab=data`
+
+Expected visuals:
+
+- stockpile-related tables/panels
+- data summaries for current state
+
+#### C10. Import Data
+
+Access:
+
+- Sidebar → Data & Integration → `Import Data`
+- URL: `/app/planner?tab=import`
+
+Expected visuals:
+
+- file upload controls
+- file parsing or mapping interfaces
+
+#### C11. Integrations
+
+Access:
+
+- Sidebar → Data & Integration → `Integrations`
+- URL: `/app/planner?tab=integrations`
+
+Expected visuals:
+
+- external mapping/integration configuration panels
+- import/export mapping actions
+
+#### C12. Settings
+
+Access:
+
+- Sidebar → Data & Integration → `Settings`
+- URL: `/app/planner?tab=settings`
+
+Expected visuals:
+
+- configuration forms for settings domains
+- persistent save actions and feedback toasts/messages
+
+### D. Operations modules guide
+
+#### D1. Fleet Management
+
+Access:
+
+- Sidebar → Operations → `Fleet Management`
+- URL: `/app/fleet`
+
+Expected visuals:
+
+- fleet dashboard cards/charts/maps
+- equipment/cycle context panels
+
+#### D2. Drill & Blast
+
+Access:
+
+- Sidebar → Operations → `Drill & Blast`
+- URL: `/app/drill-blast`
+
+Expected visuals:
+
+- blast pattern/event module UI
+- related action controls
+
+#### D3. Shift Operations
+
+Access:
+
+- Sidebar → Operations → `Shift Operations`
+- URL: `/app/operations`
+
+Expected visuals:
+
+- shift handover/operations forms and logs
+- shift context selectors or summary panels
+
+### E. Monitoring modules guide
+
+#### E1. Slope Stability
+
+Access:
+
+- Sidebar → Monitoring → `Slope Stability`
+- URL base: `/app/monitoring`
+
+Expected visuals:
+
+- monitoring panels for geotechnical context
+- alert/readings view blocks
+
+#### E2. Environment
+
+Access:
+
+- Sidebar → Monitoring → `Environment`
+- URL base: `/app/monitoring`
+
+Expected visuals:
+
+- environmental monitoring panels
+- dust/condition tracking context
+
+### F. Seed Data workflow guide
+
+Access:
+
+- Sidebar → Data & Integration → `Seed Demo Data`
+- URL: `/app/seed-data`
+
+Expected visuals:
+
+- clearly labeled seed action controls
+- success/failure status messaging
+- post-seed planner pages populate with data
+
+---
+
 ## 🔧 Setup Options
 
 MineOpt Pro can be set up in three different ways depending on your needs:
@@ -1004,6 +1472,208 @@ ws.onmessage = (event) => {
 
 ---
 
+## ⚠️ Current Limitations & Known Gaps (February 2026)
+
+This section is intentionally direct. It describes where the product is still maturing so users and contributors can plan safely.
+
+### Capability Maturity Matrix
+
+Legend:
+
+- `✅ Available` = usable now in normal workflows
+- `🟡 Partial` = available with constraints or incomplete UX
+- `🔜 Planned` = designed/targeted but not fully delivered in active workflow
+
+| Domain | Maturity | Notes |
+|------|------|------|
+| Core authentication and protected routing | ✅ Available | Login/register and protected routes are active in app shell. |
+| Dashboard and planner shell navigation | ✅ Available | Main pages and planner tabs are reachable via menu and URL. |
+| Schedule and scenario interaction | 🟡 Partial | Core workflows exist; ongoing hardening for enterprise-grade determinism and diagnostics depth. |
+| Quality and stockpile workflows | 🟡 Partial | Core modules are available; complete operational confidence workflows continue to mature. |
+| Flow network configuration | 🟡 Partial | Editable and usable; validation depth and advanced UX still improving. |
+| Raster + terrain operations | 🟡 Partial | Strong API foundation; runtime driver support and upload UX vary by environment. |
+| CRS transformation and multi-coordinate support | ✅ Available | CRS service is broad and practical for mine workflows. |
+| ECW handling | 🟡 Partial | Works where runtime drivers support it; GeoTIFF fallback recommended for universal behavior. |
+| DXF/STR/CSV/TXT/ASCII file workflows | ✅ Available | Parse/import/export paths exist; end-user pipeline UX continues to be refined. |
+| Surface/CAD string/annotation tooling | 🟡 Partial | API coverage is substantial; some interactive tool chains remain integration-heavy. |
+| Fleet/drill-blast/operations/monitoring dashboards | ✅ Available | Dedicated modules are present and accessible. |
+| Publishing/report-pack enterprise pipeline | 🟡 Partial | Reporting exists; full commercial governance and publishing rigor is still in progress. |
+| Multi-user conflict controls/audit depth | 🟡 Partial | Present foundations with ongoing enterprise hardening work. |
+
+### What this means for end-users today
+
+1. You can run and evaluate meaningful planning workflows locally.
+2. You can test import, schedule, and module navigation end-to-end.
+3. You should still treat this as an evolving product platform rather than a fully hardened commercial release.
+
+### Known technical constraints to be aware of
+
+1. Raster file operations can depend on server file accessibility and installed raster drivers.
+2. ECW behavior is environment-dependent and may need conversion workflows.
+3. Some advanced UX pathways are still converging from module-first to workflow-first behavior.
+4. Large frontend bundles in some builds can impact first-load performance.
+5. Some workflows still require clearer operator-guided validations and guardrails.
+
+### No-cost policy impact
+
+This project is built to avoid mandatory paid runtime dependencies.
+
+Possible cost triggers (optional, environment-driven):
+
+1. Commercial ECW/GDAL codec/licensing in certain enterprise deployments.
+2. Enterprise hosting/monitoring/email providers for production scale.
+3. Proprietary external system access (if your organization requires paid integration endpoints).
+
+If your goal is strict no-cost operation, use open-source-compatible formats and local services by default.
+
+---
+
+## 🛣️ Future Work Roadmap to Commercial Readiness
+
+This roadmap aligns with the project recovery plans and issue execution waves.
+
+### Phase 1: Reliability and baseline health
+
+Target outcomes:
+
+1. Stable automated test baseline across backend and frontend.
+2. Strong lint/build gates in CI.
+3. Elimination of unstable contract drift in active user workflows.
+
+Key work:
+
+- backend import path cleanup and test contract alignment
+- frontend test runner and config standardization
+- lint baseline hardening and quality gate enforcement
+
+### Phase 2: API and workflow consistency
+
+Target outcomes:
+
+1. Single API access strategy for frontend modules.
+2. Uniform endpoint usage patterns.
+3. Reduced environment-specific behavior differences.
+
+Key work:
+
+- centralize all active API calls through service layer
+- remove fragmented hardcoded endpoint usage
+- strengthen endpoint compatibility checks
+
+### Phase 3: Geospatial and coordinate pipeline hardening
+
+Target outcomes:
+
+1. Upload-first raster workflows with robust validations.
+2. Clear runtime capability checks for ECW and other raster formats.
+3. Seamless CRS handling in import and spatial flows.
+
+Key work:
+
+- raster ingestion workflow hardening
+- CRS metadata visibility and transformation controls
+- explicit fallback workflows for unsupported drivers
+
+### Phase 4: Site-builder and import UX maturity
+
+Target outcomes:
+
+1. Unified, intuitive import-to-site workflow.
+2. Strong validation and recoverable error handling.
+3. Cleaner route-level discoverability of file workflows.
+
+Key work:
+
+- consolidate duplicate wizard paths where relevant
+- guided upload → map → validate → build pipeline
+- improve malformed file diagnostics and recovery UX
+
+### Phase 5: Surface/CAD/annotation integrated workspace
+
+Target outcomes:
+
+1. Single integrated spatial tool experience.
+2. Shared selection and editing model.
+3. Better operational feedback for geometry operations.
+
+Key work:
+
+- integrate surface tools, CAD strings, and annotations into unified workspace behavior
+- add operation history, undo/redo and clearer result overlays
+- strengthen spatial query/edit cycles for production users
+
+### Phase 6: Scheduling and optimization authority
+
+Target outcomes:
+
+1. Deterministic schedule runs for same inputs.
+2. Strong explanation artifacts for decisions.
+3. Improved operational trust in full-pass outputs.
+
+Key work:
+
+- harden objective profile execution and constraint accounting
+- improve diagnostics and binding-constraint transparency
+- deepen scenario comparison outputs
+
+### Phase 7: Reporting, publishing, and governance
+
+Target outcomes:
+
+1. Reliable report-pack generation.
+2. Version-linked publishing with strong traceability.
+3. Enterprise-friendly operational exports.
+
+Key work:
+
+- standard report templates and export consistency
+- immutable schedule version linkage across artifacts
+- outbound integration hardening for dispatch/BI flows
+
+### Phase 8: Collaboration and enterprise controls
+
+Target outcomes:
+
+1. Safer multi-user editing behavior.
+2. Stronger permissions and audit consistency.
+3. Better operator awareness of concurrent changes.
+
+Key work:
+
+- enforce role checks across critical endpoints
+- improve change tracking and collaboration visibility
+- strengthen edit conflict handling
+
+### Phase 9: Realistic synthetic data and regression scenarios
+
+Target outcomes:
+
+1. Repeatable realistic scenario datasets.
+2. Better workflow regression confidence.
+3. More reliable demo/test environments.
+
+Key work:
+
+- deterministic synthetic generation controls
+- region-aligned realistic scenario packs
+- import-to-report regression suite coverage
+
+### Phase 10: Commercial release readiness
+
+Target outcomes:
+
+1. Release checklist with pass/fail gates.
+2. Performance and reliability budgets.
+3. Documented UAT for planner/supervisor/admin personas.
+
+Key work:
+
+- enforce release governance checklist
+- performance monitoring and runtime thresholds
+- end-to-end UAT evidence capture
+
+---
+
 ## 🐛 Troubleshooting
 
 ### Backend Issues
@@ -1242,6 +1912,116 @@ Open-Cast_Mine_Production_Optimization_Dashboard/
 ├── .env.example                     # Environment template
 └── README.md                        # This file
 ```
+
+### Visual Architecture Map (How a user action travels through the system)
+
+```text
+[User in Browser]
+       |
+       v
+[React Page / Component]
+       |
+       v
+[frontend/src/services/api.js]
+       |
+       v
+[FastAPI Router Endpoint]
+       |
+       v
+[Service Layer Business Logic]
+       |
+       v
+[SQLAlchemy Models + Database]
+       |
+       v
+[JSON Response Back to UI]
+```
+
+### Visual Runtime Topology (Local Development)
+
+```text
+┌─────────────────────────────┐
+│ Browser (localhost:5173)    │
+│ React UI                    │
+└──────────────┬──────────────┘
+               │ HTTP/JSON
+               ▼
+┌─────────────────────────────┐
+│ FastAPI (localhost:8000)    │
+│ Routers + Services + Models │
+└──────────────┬──────────────┘
+               │ SQL
+               ▼
+┌─────────────────────────────┐
+│ SQLite or PostgreSQL        │
+│ Site, schedule, flow, etc.  │
+└─────────────────────────────┘
+```
+
+### Visual Frontend Route Hierarchy
+
+```text
+/                       -> LandingPage
+/login                  -> LoginPage
+/register               -> LoginPage (register mode)
+/app/dashboard          -> SiteDashboard
+/app/planner            -> PlannerWorkspace (tab-driven)
+/app/fleet              -> FleetDashboard
+/app/drill-blast        -> DrillBlastDashboard
+/app/operations         -> OperationsDashboard
+/app/monitoring         -> MonitoringDashboard
+/app/seed-data          -> SeedDataPage
+```
+
+### Visual Planner Tab Hierarchy
+
+```text
+/app/planner?tab=spatial
+/app/planner?tab=gantt
+/app/planner?tab=schedule-control
+/app/planner?tab=reporting
+/app/planner?tab=flow-editor
+/app/planner?tab=product-specs
+/app/planner?tab=resources
+/app/planner?tab=geology
+/app/planner?tab=data
+/app/planner?tab=import
+/app/planner?tab=integrations
+/app/planner?tab=settings
+```
+
+### Visual "Where to Edit What" Guide
+
+| If you want to change... | Start here |
+|------|------|
+| API endpoint behavior | `backend/app/routers/` |
+| Business rules/calculations | `backend/app/services/` |
+| Database entities/fields | `backend/app/domain/` |
+| UI page routing | `frontend/src/App.jsx` |
+| Sidebar navigation/menu | `frontend/src/components/layout/AppLayout.jsx` |
+| Planner tab orchestration | `frontend/src/pages/PlannerWorkspace.jsx` |
+| API call wiring in UI | `frontend/src/services/api.js` |
+| Docs and plans | `docs/` |
+
+### Visual "How to verify structure is healthy"
+
+Run from project root:
+
+```bash
+# Backend starts
+cd backend
+uvicorn app.main:app --reload --port 8000
+
+# Frontend starts (new terminal)
+cd frontend
+npm run dev
+```
+
+**👀 You should see:**
+
+- backend: startup complete + table init log
+- frontend: Vite local URL output
+- app pages resolve without route 404 for listed routes
 
 ---
 
