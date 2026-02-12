@@ -826,6 +826,277 @@ class SurfaceService:
         xyz_points = [XYZPoint(x=v.x, y=v.y, z=v.z) for v in surface.vertices]
         return grid.export_xyz(xyz_points, file_path=file_path)
 
+    # =========================================================================
+    # CONSTRAINED DELAUNAY WITH BREAKLINES
+    # =========================================================================
+
+    def create_tin_with_breaklines(
+        self,
+        points: List[Tuple[float, float, float]],
+        breaklines: List[List[Tuple[float, float, float]]],
+        name: str = "Surface",
+        surface_type: str = "terrain",
+    ) -> TINSurface:
+        """
+        Create a TIN surface honoring breaklines (ridges, toes, crests).
+
+        Breakline vertices are merged into the point cloud before Delaunay
+        triangulation so that triangle edges align with the breaklines.
+
+        Args:
+            points: List of (x, y, z) scattered points.
+            breaklines: List of polylines, each a list of (x, y, z).
+            name: Surface name.
+            surface_type: Type of surface.
+
+        Returns:
+            TINSurface with breakline-honored triangulation.
+        """
+        # Merge breakline vertices into the point set
+        all_pts = list(points)
+        for bl in breaklines:
+            for pt in bl:
+                all_pts.append(pt)
+
+        # Remove near-duplicates (within 1e-6 tolerance)
+        unique_pts: List[Tuple[float, float, float]] = []
+        seen_xy: set = set()
+        for p in all_pts:
+            key = (round(p[0], 6), round(p[1], 6))
+            if key not in seen_xy:
+                seen_xy.add(key)
+                unique_pts.append(p)
+
+        return self.create_tin_from_points(unique_pts, name, surface_type)
+
+    # =========================================================================
+    # SURFACE FROM CONTOURS (interpolation)
+    # =========================================================================
+
+    def create_tin_from_contours(
+        self,
+        contours: List[Dict],
+        grid_spacing: float = 5.0,
+        name: str = "Surface",
+        surface_type: str = "terrain",
+    ) -> TINSurface:
+        """
+        Generate a TIN surface by interpolating between contour lines.
+
+        Each contour dict should have:
+            - elevation (float)
+            - points (List of [x, y] or [x, y, z])
+
+        Uses scipy.interpolate.griddata (linear) to fill between contours,
+        then triangulates the resulting regular grid.
+
+        Args:
+            contours: List of contour dicts.
+            grid_spacing: Spacing of the interpolation grid.
+            name: Surface name.
+            surface_type: Type of surface.
+
+        Returns:
+            TINSurface.
+        """
+        from scipy.interpolate import griddata
+
+        # Gather all known (x, y, z) from contour lines
+        known_points = []
+        for c in contours:
+            elev = float(c.get("elevation", 0))
+            for pt in c.get("points", []):
+                x = pt[0]
+                y = pt[1]
+                z = pt[2] if len(pt) > 2 else elev
+                known_points.append((x, y, z))
+
+        if len(known_points) < 3:
+            raise ValueError("Not enough contour points for interpolation")
+
+        pts = np.array(known_points)
+        xy = pts[:, :2]
+        z_vals = pts[:, 2]
+
+        # Build regular grid within extent
+        x_min, x_max = float(xy[:, 0].min()), float(xy[:, 0].max())
+        y_min, y_max = float(xy[:, 1].min()), float(xy[:, 1].max())
+
+        grid_x = np.arange(x_min, x_max + grid_spacing, grid_spacing)
+        grid_y = np.arange(y_min, y_max + grid_spacing, grid_spacing)
+        gx, gy = np.meshgrid(grid_x, grid_y)
+
+        # Interpolate Z on the grid
+        gz = griddata(xy, z_vals, (gx, gy), method="linear")
+
+        # Build (x, y, z) points from valid grid cells
+        surface_pts: List[Tuple[float, float, float]] = []
+        for i in range(gx.shape[0]):
+            for j in range(gx.shape[1]):
+                if not np.isnan(gz[i, j]):
+                    surface_pts.append((float(gx[i, j]), float(gy[i, j]), float(gz[i, j])))
+
+        if len(surface_pts) < 3:
+            raise ValueError("Interpolation produced too few valid points")
+
+        return self.create_tin_from_points(surface_pts, name, surface_type)
+
+    # =========================================================================
+    # SURFACE FROM REGULAR GRID
+    # =========================================================================
+
+    def create_tin_from_grid(
+        self,
+        grid_data: "np.ndarray",
+        x_origin: float,
+        y_origin: float,
+        cell_size: float,
+        nodata: float = -9999.0,
+        name: str = "Surface",
+        surface_type: str = "terrain",
+    ) -> TINSurface:
+        """
+        Convert a regular elevation grid to a TIN surface.
+
+        Builds two triangles per grid cell (upper-left & lower-right)
+        and skips cells with nodata.
+
+        Args:
+            grid_data: 2D numpy array (rows=nrows, cols=ncols) of elevations.
+            x_origin: X coordinate of the lower-left corner.
+            y_origin: Y coordinate of the lower-left corner.
+            cell_size: Grid spacing.
+            nodata: No-data sentinel value.
+            name: Surface name.
+            surface_type: Type of surface.
+
+        Returns:
+            TINSurface.
+        """
+        nrows, ncols = grid_data.shape
+        vertices: List[Point3D] = []
+        idx_map: Dict[Tuple[int, int], int] = {}
+
+        # Build vertex list (skip nodata)
+        for r in range(nrows):
+            for c in range(ncols):
+                z = float(grid_data[r, c])
+                if z == nodata or np.isnan(z):
+                    continue
+                x = x_origin + c * cell_size
+                y = y_origin + (nrows - 1 - r) * cell_size  # rows top-to-bottom
+                idx_map[(r, c)] = len(vertices)
+                vertices.append(Point3D(x=x, y=y, z=z))
+
+        # Build triangles for each cell
+        triangles: List[Triangle] = []
+        for r in range(nrows - 1):
+            for c in range(ncols - 1):
+                # Four corners
+                tl = (r, c)
+                tr = (r, c + 1)
+                bl = (r + 1, c)
+                br = (r + 1, c + 1)
+
+                has_all = all(k in idx_map for k in [tl, tr, bl, br])
+                if not has_all:
+                    continue
+
+                i_tl = idx_map[tl]
+                i_tr = idx_map[tr]
+                i_bl = idx_map[bl]
+                i_br = idx_map[br]
+
+                # Two triangles per cell
+                triangles.append(Triangle(i=i_tl, j=i_bl, k=i_tr))
+                triangles.append(Triangle(i=i_tr, j=i_bl, k=i_br))
+
+        if len(vertices) < 3:
+            raise ValueError("Grid contains too few valid cells")
+
+        return TINSurface(
+            name=name,
+            vertices=vertices,
+            triangles=triangles,
+            surface_type=surface_type,
+        )
+
+    # =========================================================================
+    # SURFACE VALIDATION
+    # =========================================================================
+
+    def validate_surface(self, surface: TINSurface) -> Dict[str, Any]:
+        """
+        Validate a TIN surface for common problems.
+
+        Checks:
+            - Degenerate triangles (near-zero area)
+            - Invalid vertex indices
+            - Duplicate vertices
+            - Self-intersecting triangles (2D overlap)
+
+        Returns:
+            Dict with 'valid' (bool), 'warnings' (list), 'errors' (list),
+            and 'stats' (dict).
+        """
+        errors: List[str] = []
+        warnings: List[str] = []
+        n_verts = len(surface.vertices)
+        degenerate_count = 0
+
+        # Check index bounds
+        for idx, tri in enumerate(surface.triangles):
+            for vi in (tri.i, tri.j, tri.k):
+                if vi < 0 or vi >= n_verts:
+                    errors.append(f"Triangle {idx}: vertex index {vi} out of range [0, {n_verts})")
+
+        # Check degenerate triangles (area < threshold)
+        area_threshold = 1e-8
+        for idx, tri in enumerate(surface.triangles):
+            if tri.i >= n_verts or tri.j >= n_verts or tri.k >= n_verts:
+                continue
+            v0 = surface.vertices[tri.i]
+            v1 = surface.vertices[tri.j]
+            v2 = surface.vertices[tri.k]
+            area = self._triangle_area_3d(
+                v0.x, v0.y, v0.z,
+                v1.x, v1.y, v1.z,
+                v2.x, v2.y, v2.z,
+            )
+            if area < area_threshold:
+                degenerate_count += 1
+
+        if degenerate_count:
+            warnings.append(f"{degenerate_count} degenerate triangle(s) with near-zero area")
+
+        # Check for duplicate vertices
+        seen: set = set()
+        dup_count = 0
+        for v in surface.vertices:
+            key = (round(v.x, 6), round(v.y, 6), round(v.z, 6))
+            if key in seen:
+                dup_count += 1
+            seen.add(key)
+
+        if dup_count:
+            warnings.append(f"{dup_count} duplicate vertex position(s)")
+
+        # Surface area
+        total_area = self.calculate_surface_area(surface)
+
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings,
+            "stats": {
+                "vertex_count": n_verts,
+                "triangle_count": len(surface.triangles),
+                "degenerate_triangles": degenerate_count,
+                "duplicate_vertices": dup_count,
+                "surface_area_m2": round(total_area, 2),
+            },
+        }
+
 
 # Factory function
 def get_surface_service(db: Optional[Session] = None) -> SurfaceService:

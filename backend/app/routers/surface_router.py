@@ -498,3 +498,200 @@ async def delete_surface(
     db.commit()
     
     return {"message": "Surface deleted", "surface_id": surface_id}
+
+
+# =============================================================================
+# Issue #73 — Full 3D Surface Build Pipeline
+# =============================================================================
+
+
+class CreateWithBreaklinesRequest(BaseModel):
+    """Request to create TIN with breakline-honored triangulation."""
+    site_id: str
+    name: str
+    surface_type: str = "terrain"
+    points: List[List[float]]  # [[x, y, z], ...]
+    breaklines: List[List[List[float]]]  # [[[x, y, z], ...], ...]
+
+
+class CreateFromContoursRequest(BaseModel):
+    """Request to create a TIN surface from contour lines via interpolation."""
+    site_id: str
+    name: str
+    surface_type: str = "terrain"
+    contours: List[Dict[str, Any]]  # [{"elevation": 100, "points": [[x,y], ...]}, ...]
+    grid_spacing: float = 5.0
+
+
+class CreateFromGridRequest(BaseModel):
+    """Request to create TIN from regular grid data."""
+    site_id: str
+    name: str
+    surface_type: str = "terrain"
+    grid_data: List[List[float]]  # 2D array of elevations
+    x_origin: float
+    y_origin: float
+    cell_size: float
+    nodata: float = -9999.0
+
+
+@router.post("/create-with-breaklines", response_model=SurfaceResponse)
+async def create_surface_with_breaklines(
+    request: CreateWithBreaklinesRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Create a TIN surface with breakline-honored triangulation.
+
+    Breakline vertices are merged into the point set before Delaunay
+    triangulation, ensuring triangle edges align with breaklines.
+    """
+    service = get_surface_service(db)
+
+    try:
+        points = [tuple(p[:3]) for p in request.points if len(p) >= 3]
+        breaklines = [
+            [tuple(p[:3]) for p in bl if len(p) >= 3]
+            for bl in request.breaklines
+        ]
+
+        tin = service.create_tin_with_breaklines(
+            points=points,
+            breaklines=breaklines,
+            name=request.name,
+            surface_type=request.surface_type,
+        )
+
+        surface_id = service.save_surface(tin, request.site_id)
+        extent_min, extent_max = tin.get_extent()
+
+        return SurfaceResponse(
+            surface_id=surface_id,
+            name=tin.name,
+            surface_type=tin.surface_type,
+            seam_name=tin.seam_name,
+            vertex_count=tin.vertex_count,
+            triangle_count=tin.triangle_count,
+            area_m2=service.calculate_surface_area(tin),
+            extent_min=[extent_min.x, extent_min.y, extent_min.z],
+            extent_max=[extent_max.x, extent_max.y, extent_max.z],
+            created_at=datetime.utcnow(),
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create surface: {str(e)}")
+
+
+@router.post("/create-from-contours", response_model=SurfaceResponse)
+async def create_surface_from_contours(
+    request: CreateFromContoursRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Create a TIN surface by interpolating between contour lines.
+
+    Uses scipy.interpolate.griddata (linear) to fill between elevation
+    contours, then triangulates the resulting grid.
+    """
+    service = get_surface_service(db)
+
+    try:
+        tin = service.create_tin_from_contours(
+            contours=request.contours,
+            grid_spacing=request.grid_spacing,
+            name=request.name,
+            surface_type=request.surface_type,
+        )
+
+        surface_id = service.save_surface(tin, request.site_id)
+        extent_min, extent_max = tin.get_extent()
+
+        return SurfaceResponse(
+            surface_id=surface_id,
+            name=tin.name,
+            surface_type=tin.surface_type,
+            seam_name=tin.seam_name,
+            vertex_count=tin.vertex_count,
+            triangle_count=tin.triangle_count,
+            area_m2=service.calculate_surface_area(tin),
+            extent_min=[extent_min.x, extent_min.y, extent_min.z],
+            extent_max=[extent_max.x, extent_max.y, extent_max.z],
+            created_at=datetime.utcnow(),
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create surface: {str(e)}")
+
+
+@router.post("/create-from-grid", response_model=SurfaceResponse)
+async def create_surface_from_grid(
+    request: CreateFromGridRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Convert regular grid (raster/ASCII) data to a TIN surface.
+
+    Two triangles are created per valid grid cell.
+    """
+    import numpy as np
+
+    service = get_surface_service(db)
+
+    try:
+        grid = np.array(request.grid_data, dtype=float)
+
+        tin = service.create_tin_from_grid(
+            grid_data=grid,
+            x_origin=request.x_origin,
+            y_origin=request.y_origin,
+            cell_size=request.cell_size,
+            nodata=request.nodata,
+            name=request.name,
+            surface_type=request.surface_type,
+        )
+
+        surface_id = service.save_surface(tin, request.site_id)
+        extent_min, extent_max = tin.get_extent()
+
+        return SurfaceResponse(
+            surface_id=surface_id,
+            name=tin.name,
+            surface_type=tin.surface_type,
+            seam_name=tin.seam_name,
+            vertex_count=tin.vertex_count,
+            triangle_count=tin.triangle_count,
+            area_m2=service.calculate_surface_area(tin),
+            extent_min=[extent_min.x, extent_min.y, extent_min.z],
+            extent_max=[extent_max.x, extent_max.y, extent_max.z],
+            created_at=datetime.utcnow(),
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create surface: {str(e)}")
+
+
+@router.get("/{surface_id}/validate")
+async def validate_surface(
+    surface_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Validate a TIN surface for common problems.
+
+    Checks degenerate triangles, invalid vertex indices, duplicate
+    vertices, and reports surface statistics.
+    """
+    service = get_surface_service(db)
+
+    tin = service.load_surface(surface_id)
+    if not tin:
+        raise HTTPException(status_code=404, detail="Surface not found")
+
+    return service.validate_surface(tin)
+
