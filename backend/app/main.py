@@ -45,7 +45,8 @@ from .routers import (
     settings_router,
     resources_router,
     csv_export_router,
-    planning_horizon_router
+    planning_horizon_router,
+    precedence_router
 )
 from .database import engine, Base
 
@@ -231,6 +232,7 @@ app.include_router(settings_router.router)
 app.include_router(resources_router.router)
 app.include_router(csv_export_router.router)
 app.include_router(planning_horizon_router.router)
+app.include_router(precedence_router.router)
 
 
 @app.get("/")
