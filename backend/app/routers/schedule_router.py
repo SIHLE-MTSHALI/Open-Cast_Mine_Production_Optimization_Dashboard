@@ -129,74 +129,141 @@ class ScheduleOptimizeRequest(BaseModel):
     time_limit_seconds: int = 300
 
 
+
+# ── In-memory run status store (production: use Redis / DB) ───────────────
+import threading
+_run_status_lock = threading.Lock()
+_run_status_store: dict = {}  # run_id -> {status, progress, stage, ...}
+
+
+def _store_progress(run_id: str, event: dict):
+    """Callback passed to ScheduleEngine to record progress."""
+    with _run_status_lock:
+        entry = _run_status_store.setdefault(run_id, {})
+        entry.update(event)
+        entry["status"] = "running"
+
+
+def _run_engine_async(run_id: str, mode: str, config_dict: dict):
+    """Execute schedule engine in a background thread with its own DB session."""
+    from ..database import SessionLocal
+    from ..services.schedule_engine import ScheduleEngine, ScheduleRunConfig
+    import functools
+
+    session = SessionLocal()
+    try:
+        callback = functools.partial(_store_progress, run_id)
+        engine_inst = ScheduleEngine(session, progress_callback=callback)
+        config = ScheduleRunConfig(**config_dict)
+
+        with _run_status_lock:
+            _run_status_store[run_id] = {
+                "status": "running", "stage": "initializing", "progress_pct": 0
+            }
+
+        if mode == "fast":
+            result = engine_inst.run_fast_pass(config)
+        else:
+            result = engine_inst.run_full_pass(config)
+
+        with _run_status_lock:
+            _run_status_store[run_id] = {
+                "status": "completed" if result.success else "failed",
+                "progress_pct": 100,
+                "stage": "done",
+                "tasks_created": result.tasks_created,
+                "flows_created": result.flows_created,
+                "total_tonnes": result.total_tonnes,
+                "diagnostics": result.diagnostics[-5:],
+                "stage_timings": result.stage_timings,
+            }
+    except Exception as exc:
+        with _run_status_lock:
+            _run_status_store[run_id] = {
+                "status": "error",
+                "error": str(exc),
+                "progress_pct": 0,
+            }
+    finally:
+        session.close()
+
+
 @router.post("/run/full-pass")
 def run_full_pass(request: ScheduleOptimizeRequest, db: Session = Depends(get_db)):
-    """Run a full optimization pass on the schedule."""
-    # Validate version exists
+    """Run a full optimization pass on the schedule (async)."""
     version = db.query(models_scheduling.ScheduleVersion).filter(
         models_scheduling.ScheduleVersion.version_id == request.schedule_version_id
     ).first()
     if not version:
         raise HTTPException(status_code=404, detail="Schedule version not found")
-    
-    # In production, this would trigger an async optimization job
-    # For now, return a pending status
-    import uuid
-    run_id = str(uuid.uuid4())
-    
+
+    import uuid as _uuid
+    run_id = str(_uuid.uuid4())
+    config_dict = {
+        "site_id": version.site_id,
+        "schedule_version_id": request.schedule_version_id,
+    }
+    t = threading.Thread(
+        target=_run_engine_async,
+        args=(run_id, "full", config_dict),
+        daemon=True,
+    )
+    t.start()
+
     return {
         "run_id": run_id,
         "status": "queued",
         "message": "Full optimization pass queued",
         "schedule_version_id": request.schedule_version_id,
-        "estimated_time_seconds": request.time_limit_seconds
     }
 
 
 @router.post("/run/fast-pass")
 def run_fast_pass(request: ScheduleOptimizeRequest, db: Session = Depends(get_db)):
-    """Run a fast heuristic optimization pass on the schedule."""
-    # Validate version exists
+    """Run a fast heuristic optimization pass on the schedule (async)."""
     version = db.query(models_scheduling.ScheduleVersion).filter(
         models_scheduling.ScheduleVersion.version_id == request.schedule_version_id
     ).first()
     if not version:
         raise HTTPException(status_code=404, detail="Schedule version not found")
-    
-    # Fast-pass uses heuristics rather than full LP solve
-    # Returns result more quickly with near-optimal solution
-    import uuid
-    run_id = str(uuid.uuid4())
-    
+
+    import uuid as _uuid
+    run_id = str(_uuid.uuid4())
+    config_dict = {
+        "site_id": version.site_id,
+        "schedule_version_id": request.schedule_version_id,
+    }
+    t = threading.Thread(
+        target=_run_engine_async,
+        args=(run_id, "fast", config_dict),
+        daemon=True,
+    )
+    t.start()
+
     return {
         "run_id": run_id,
         "status": "queued",
         "message": "Fast heuristic optimization pass queued",
         "schedule_version_id": request.schedule_version_id,
-        "estimated_time_seconds": min(request.time_limit_seconds, 60)  # Fast pass is capped at 60s
     }
+
+
+@router.get("/run/{run_id}/status")
+def get_run_status(run_id: str):
+    """Poll the progress of a schedule optimization run."""
+    with _run_status_lock:
+        entry = _run_status_store.get(run_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return {"run_id": run_id, **entry}
 
 
 @router.post("/optimize")
 def optimize_schedule(request: ScheduleOptimizeRequest, db: Session = Depends(get_db)):
     """Alias endpoint for optimization - redirects to appropriate optimization type."""
-    # Validate version exists
-    version = db.query(models_scheduling.ScheduleVersion).filter(
-        models_scheduling.ScheduleVersion.version_id == request.schedule_version_id
-    ).first()
-    if not version:
-        raise HTTPException(status_code=404, detail="Schedule version not found")
-    
-    import uuid
-    run_id = str(uuid.uuid4())
-    
-    return {
-        "run_id": run_id,
-        "status": "queued",
-        "message": f"Optimization ({request.mode} mode) queued",
-        "schedule_version_id": request.schedule_version_id,
-        "mode": request.mode
-    }
+    if request.mode == "fast":
+        return run_fast_pass(request, db)
+    return run_full_pass(request, db)
 
 @router.get("/versions/{version_id}/tasks")
 def get_tasks(version_id: str, db: Session = Depends(get_db)):
