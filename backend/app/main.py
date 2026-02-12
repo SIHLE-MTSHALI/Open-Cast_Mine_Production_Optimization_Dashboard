@@ -44,7 +44,8 @@ from .routers import (
     geology_router,
     settings_router,
     resources_router,
-    csv_export_router
+    csv_export_router,
+    planning_horizon_router
 )
 from .database import engine, Base
 
@@ -229,6 +230,7 @@ app.include_router(geology_router.router)
 app.include_router(settings_router.router)
 app.include_router(resources_router.router)
 app.include_router(csv_export_router.router)
+app.include_router(planning_horizon_router.router)
 
 
 @app.get("/")
