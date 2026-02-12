@@ -3,6 +3,7 @@ File Format Router - Phase 1 File Format Foundation
 
 REST API endpoints for file parsing, preview, and export.
 Supports DXF, Surpac .str, CSV, and ASCII formats.
+All parse/export endpoints support optional CRS transformation.
 
 Endpoints:
 - POST /files/parse - Parse uploaded file
@@ -15,9 +16,10 @@ Endpoints:
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from enum import Enum
 import io
+import logging
 
 from ..services.dxf_service import get_dxf_service, DXFParseResult, DXFExportConfig, DXFPoint
 from ..services.surpac_parser import get_surpac_parser, SurpacParseResult, SurpacString
@@ -29,8 +31,10 @@ from ..services.tabular_parser import (
     ImportTemplate,
     BoreholeBoreholePurpose
 )
+from ..services.crs_service import get_crs_service
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/files", tags=["File Formats"])
 
 
@@ -70,6 +74,8 @@ class ExportRequest(BaseModel):
     data: List[Dict[str, Any]]
     filename: str = "export"
     options: Dict[str, Any] = Field(default_factory=dict)
+    source_crs: Optional[int] = Field(None, description="Source EPSG code for coordinate data")
+    target_crs: Optional[int] = Field(None, description="Target EPSG code to transform coordinates before export")
 
 
 # Response Models
@@ -92,6 +98,16 @@ class DXFEntityResponse(BaseModel):
     is_closed: bool
 
 
+class CRSMetadata(BaseModel):
+    """CRS information attached to parsed file data."""
+    source_crs: Optional[int] = None
+    target_crs: Optional[int] = None
+    source_crs_name: Optional[str] = None
+    target_crs_name: Optional[str] = None
+    transformed: bool = False
+    transform_errors: List[str] = []
+
+
 class DXFParseResponse(BaseModel):
     """Response from parsing a DXF file."""
     success: bool
@@ -107,6 +123,7 @@ class DXFParseResponse(BaseModel):
     entities: List[DXFEntityResponse]
     errors: List[str]
     warnings: List[str]
+    crs: Optional[CRSMetadata] = None
 
 
 class SurpacStringResponse(BaseModel):
@@ -129,6 +146,7 @@ class SurpacParseResponse(BaseModel):
     strings: List[SurpacStringResponse]
     errors: List[str]
     warnings: List[str]
+    crs: Optional[CRSMetadata] = None
 
 
 class ColumnInfoResponse(BaseModel):
@@ -155,6 +173,7 @@ class TabularParseResponse(BaseModel):
     preview_rows: List[Dict[str, str]]
     errors: List[str]
     warnings: List[str]
+    crs: Optional[CRSMetadata] = None
 
 
 class TemplateResponse(BaseModel):
@@ -167,7 +186,62 @@ class TemplateResponse(BaseModel):
     description: str
 
 
+# =============================================================================
+# CRS Helper Functions
+# =============================================================================
+
+def _build_crs_metadata(
+    source_crs: Optional[int],
+    target_crs: Optional[int],
+    transformed: bool = False,
+    errors: Optional[List[str]] = None
+) -> Optional[CRSMetadata]:
+    """Build CRS metadata for responses."""
+    if source_crs is None and target_crs is None:
+        return None
+    
+    crs_service = get_crs_service()
+    source_name = None
+    target_name = None
+    
+    if source_crs:
+        info = crs_service.get_crs_info(source_crs)
+        source_name = info.name if info else f"EPSG:{source_crs}"
+    if target_crs:
+        info = crs_service.get_crs_info(target_crs)
+        target_name = info.name if info else f"EPSG:{target_crs}"
+    
+    return CRSMetadata(
+        source_crs=source_crs,
+        target_crs=target_crs,
+        source_crs_name=source_name,
+        target_crs_name=target_name,
+        transformed=transformed,
+        transform_errors=errors or []
+    )
+
+
+def _transform_points_list(
+    points: List[Tuple[float, float, float]],
+    from_epsg: int,
+    to_epsg: int
+) -> Tuple[List[Tuple[float, float, float]], List[str]]:
+    """Transform a list of (x,y,z) tuples between CRS. Returns (transformed, errors)."""
+    if from_epsg == to_epsg:
+        return points, []
+    
+    crs_service = get_crs_service()
+    result = crs_service.transform_points(points, from_epsg, to_epsg)
+    
+    if result.success:
+        return result.transformed_points, result.errors
+    else:
+        return points, result.errors
+
+
+# =============================================================================
 # Endpoints
+# =============================================================================
 
 @router.get("/formats", response_model=List[FormatInfo])
 async def list_formats():
@@ -209,11 +283,16 @@ async def list_formats():
 
 
 @router.post("/parse/dxf", response_model=DXFParseResponse)
-async def parse_dxf(file: UploadFile = File(...)):
+async def parse_dxf(
+    file: UploadFile = File(...),
+    source_crs: Optional[int] = Query(None, description="Source EPSG code of the DXF coordinates"),
+    target_crs: Optional[int] = Query(None, description="Target EPSG code to transform coordinates to")
+):
     """
     Parse a DXF file and extract geometry.
     
     Returns layers, entities, and extents.
+    Optionally transforms coordinates from source_crs to target_crs.
     """
     if not file.filename.lower().endswith('.dxf'):
         raise HTTPException(400, "File must have .dxf extension")
@@ -223,6 +302,36 @@ async def parse_dxf(file: UploadFile = File(...)):
     try:
         service = get_dxf_service()
         result = service.parse_bytes(content, file.filename)
+        
+        # Apply CRS transformation if both source and target are specified
+        crs_errors = []
+        transformed = False
+        if source_crs and target_crs and source_crs != target_crs:
+            try:
+                for entity in result.entities:
+                    if entity.points:
+                        pts = [(p.x, p.y, p.z) for p in entity.points]
+                        tx_pts, errs = _transform_points_list(pts, source_crs, target_crs)
+                        crs_errors.extend(errs)
+                        for i, (tx, ty, tz) in enumerate(tx_pts):
+                            entity.points[i] = DXFPoint(x=tx, y=ty, z=tz)
+                # Recalculate extents after transformation
+                all_points = [p for e in result.entities for p in e.points]
+                if all_points:
+                    result.extent_min = DXFPoint(
+                        x=min(p.x for p in all_points),
+                        y=min(p.y for p in all_points),
+                        z=min(p.z for p in all_points)
+                    )
+                    result.extent_max = DXFPoint(
+                        x=max(p.x for p in all_points),
+                        y=max(p.y for p in all_points),
+                        z=max(p.z for p in all_points)
+                    )
+                transformed = True
+                logger.info(f"Transformed DXF coordinates EPSG:{source_crs} → EPSG:{target_crs}")
+            except Exception as e:
+                crs_errors.append(f"CRS transformation failed: {str(e)}")
         
         # Convert to response format
         entities = [
@@ -248,7 +357,8 @@ async def parse_dxf(file: UploadFile = File(...)):
             extent_max=[result.extent_max.x, result.extent_max.y, result.extent_max.z] if result.extent_max else None,
             entities=entities,
             errors=result.errors,
-            warnings=result.warnings
+            warnings=result.warnings,
+            crs=_build_crs_metadata(source_crs, target_crs, transformed, crs_errors)
         )
     except ImportError as e:
         raise HTTPException(500, f"DXF parsing unavailable: {str(e)}")
@@ -257,11 +367,16 @@ async def parse_dxf(file: UploadFile = File(...)):
 
 
 @router.post("/parse/surpac", response_model=SurpacParseResponse)
-async def parse_surpac(file: UploadFile = File(...)):
+async def parse_surpac(
+    file: UploadFile = File(...),
+    source_crs: Optional[int] = Query(None, description="Source EPSG code of the Surpac coordinates"),
+    target_crs: Optional[int] = Query(None, description="Target EPSG code to transform coordinates to")
+):
     """
     Parse a Surpac .str file.
     
     Returns strings, points, and extents.
+    Optionally transforms coordinates from source_crs to target_crs.
     """
     if not file.filename.lower().endswith('.str'):
         raise HTTPException(400, "File must have .str extension")
@@ -271,6 +386,39 @@ async def parse_surpac(file: UploadFile = File(...)):
     try:
         parser = get_surpac_parser()
         result = parser.parse_bytes(content, file.filename)
+        
+        # Apply CRS transformation if both source and target are specified
+        crs_errors = []
+        transformed = False
+        if source_crs and target_crs and source_crs != target_crs:
+            try:
+                for s in result.strings:
+                    if hasattr(s, 'points') and s.points:
+                        pts = [(p[0], p[1], p[2] if len(p) > 2 else 0.0) for p in s.points]
+                        tx_pts, errs = _transform_points_list(pts, source_crs, target_crs)
+                        crs_errors.extend(errs)
+                        for i, (tx, ty, tz) in enumerate(tx_pts):
+                            s.points[i] = (tx, ty, tz)
+                # Recalculate extents
+                all_pts = []
+                for s in result.strings:
+                    if hasattr(s, 'points'):
+                        all_pts.extend(s.points)
+                if all_pts:
+                    result.extent_min = (
+                        min(p[0] for p in all_pts),
+                        min(p[1] for p in all_pts),
+                        min(p[2] if len(p) > 2 else 0.0 for p in all_pts)
+                    )
+                    result.extent_max = (
+                        max(p[0] for p in all_pts),
+                        max(p[1] for p in all_pts),
+                        max(p[2] if len(p) > 2 else 0.0 for p in all_pts)
+                    )
+                transformed = True
+                logger.info(f"Transformed Surpac coordinates EPSG:{source_crs} → EPSG:{target_crs}")
+            except Exception as e:
+                crs_errors.append(f"CRS transformation failed: {str(e)}")
         
         # Convert to response format
         strings = [
@@ -293,7 +441,8 @@ async def parse_surpac(file: UploadFile = File(...)):
             extent_max=list(result.extent_max) if result.extent_max else None,
             strings=strings,
             errors=result.errors,
-            warnings=result.warnings
+            warnings=result.warnings,
+            crs=_build_crs_metadata(source_crs, target_crs, transformed, crs_errors)
         )
     except Exception as e:
         raise HTTPException(500, f"Failed to parse Surpac file: {str(e)}")
@@ -303,13 +452,19 @@ async def parse_surpac(file: UploadFile = File(...)):
 async def parse_tabular(
     file: UploadFile = File(...),
     delimiter: Optional[str] = Query(None, description="Delimiter (comma, tab, etc). Auto-detect if not specified."),
-    has_header: bool = Query(True, description="Whether file has header row")
+    has_header: bool = Query(True, description="Whether file has header row"),
+    source_crs: Optional[int] = Query(None, description="Source EPSG code of coordinate columns"),
+    target_crs: Optional[int] = Query(None, description="Target EPSG code to transform coordinates to"),
+    x_column: Optional[str] = Query(None, description="Name of X/Easting column for CRS transform"),
+    y_column: Optional[str] = Query(None, description="Name of Y/Northing column for CRS transform"),
+    z_column: Optional[str] = Query(None, description="Name of Z/Elevation column for CRS transform")
 ):
     """
     Parse a CSV or delimited text file.
     
     Supports auto-detection of delimiter and column types.
     Returns column info and data preview.
+    Optionally transforms coordinate columns from source_crs to target_crs.
     """
     content = await file.read()
     
@@ -329,6 +484,53 @@ async def parse_tabular(
                 delim = Delimiter.SPACE
         
         result = parser.parse_bytes(content, file.filename, delim, has_header)
+        
+        # Apply CRS transformation to coordinate columns if specified
+        crs_errors = []
+        transformed = False
+        if source_crs and target_crs and source_crs != target_crs and result.rows:
+            # Auto-detect coordinate columns if not specified
+            col_names = [c.name.lower() for c in result.columns]
+            x_col = x_column or _detect_coord_column(col_names, ['x', 'easting', 'east', 'lon', 'longitude'])
+            y_col = y_column or _detect_coord_column(col_names, ['y', 'northing', 'north', 'lat', 'latitude'])
+            z_col = z_column or _detect_coord_column(col_names, ['z', 'elevation', 'elev', 'rl', 'altitude', 'height'])
+            
+            if x_col and y_col:
+                try:
+                    # Get actual column names (case-sensitive)
+                    actual_x = _find_actual_column(result.columns, x_col)
+                    actual_y = _find_actual_column(result.columns, y_col)
+                    actual_z = _find_actual_column(result.columns, z_col) if z_col else None
+                    
+                    if actual_x and actual_y:
+                        pts = []
+                        for row in result.rows:
+                            try:
+                                x = float(row.values.get(actual_x, 0))
+                                y = float(row.values.get(actual_y, 0))
+                                z = float(row.values.get(actual_z, 0)) if actual_z else 0.0
+                                pts.append((x, y, z))
+                            except (ValueError, TypeError):
+                                pts.append((0.0, 0.0, 0.0))
+                        
+                        tx_pts, errs = _transform_points_list(pts, source_crs, target_crs)
+                        crs_errors.extend(errs)
+                        
+                        for i, (tx, ty, tz) in enumerate(tx_pts):
+                            result.rows[i].values[actual_x] = str(tx)
+                            result.rows[i].values[actual_y] = str(ty)
+                            if actual_z:
+                                result.rows[i].values[actual_z] = str(tz)
+                        
+                        transformed = True
+                        logger.info(f"Transformed tabular coordinates EPSG:{source_crs} → EPSG:{target_crs}")
+                except Exception as e:
+                    crs_errors.append(f"CRS transformation failed: {str(e)}")
+            else:
+                crs_errors.append(
+                    "Could not detect coordinate columns. "
+                    "Specify x_column, y_column, z_column explicitly."
+                )
         
         # Build column info response
         columns = [
@@ -358,7 +560,8 @@ async def parse_tabular(
             columns=columns,
             preview_rows=preview,
             errors=result.errors,
-            warnings=result.warnings
+            warnings=result.warnings,
+            crs=_build_crs_metadata(source_crs, target_crs, transformed, crs_errors)
         )
     except Exception as e:
         raise HTTPException(500, f"Failed to parse file: {str(e)}")
@@ -410,13 +613,19 @@ async def export_dxf(request: ExportRequest):
     Export data to DXF format.
     
     Expects data with geometry (vertices) for each item.
+    If source_crs and target_crs are set, transforms coordinates before export.
     """
     try:
+        # Apply CRS transformation to geometry data before export
+        data = request.data
+        if request.source_crs and request.target_crs and request.source_crs != request.target_crs:
+            data = _transform_export_data(data, request.source_crs, request.target_crs)
+        
         service = get_dxf_service()
         
         # Export as activity areas
         dxf_bytes = service.export_activity_areas(
-            request.data,
+            data,
             file_path=None,
             config=DXFExportConfig(**request.options) if request.options else None
         )
@@ -438,13 +647,19 @@ async def export_surpac(request: ExportRequest):
     Export data to Surpac .str format.
     
     Expects data with geometry (vertices) for each item.
+    If source_crs and target_crs are set, transforms coordinates before export.
     """
     try:
+        # Apply CRS transformation to geometry data before export
+        data = request.data
+        if request.source_crs and request.target_crs and request.source_crs != request.target_crs:
+            data = _transform_export_data(data, request.source_crs, request.target_crs)
+        
         parser = get_surpac_parser()
         
         # Convert data to SurpacStrings
         strings = []
-        for i, item in enumerate(request.data, start=1):
+        for i, item in enumerate(data, start=1):
             geometry = item.get("geometry", {})
             surpac_string = parser.from_activity_area_geometry(
                 geometry,
@@ -487,3 +702,57 @@ async def export_csv(request: ExportRequest):
         )
     except Exception as e:
         raise HTTPException(500, f"Export failed: {str(e)}")
+
+
+# =============================================================================
+# CRS Coordinate Detection Helpers
+# =============================================================================
+
+def _detect_coord_column(col_names: List[str], candidates: List[str]) -> Optional[str]:
+    """Find a coordinate column by matching against candidate names."""
+    for candidate in candidates:
+        for name in col_names:
+            if name == candidate or name == candidate.upper():
+                return name
+    return None
+
+
+def _find_actual_column(columns: List[ColumnInfo], target: str) -> Optional[str]:
+    """Find the actual column name (case-sensitive) matching target."""
+    for c in columns:
+        if c.name.lower() == target.lower():
+            return c.name
+    return None
+
+
+def _transform_export_data(
+    data: List[Dict[str, Any]],
+    from_epsg: int,
+    to_epsg: int
+) -> List[Dict[str, Any]]:
+    """Transform geometry coordinates in export data from one CRS to another."""
+    import copy
+    transformed_data = copy.deepcopy(data)
+    
+    for item in transformed_data:
+        geometry = item.get("geometry", {})
+        vertices = geometry.get("vertices", [])
+        if vertices:
+            pts = [
+                (v.get("x", v.get("easting", 0)),
+                 v.get("y", v.get("northing", 0)),
+                 v.get("z", v.get("elevation", v.get("rl", 0))))
+                for v in vertices
+            ]
+            tx_pts, _ = _transform_points_list(pts, from_epsg, to_epsg)
+            for i, (tx, ty, tz) in enumerate(tx_pts):
+                if "x" in vertices[i]:
+                    vertices[i]["x"] = tx
+                    vertices[i]["y"] = ty
+                    vertices[i]["z"] = tz
+                else:
+                    vertices[i]["easting"] = tx
+                    vertices[i]["northing"] = ty
+                    vertices[i]["elevation"] = tz
+    
+    return transformed_data
