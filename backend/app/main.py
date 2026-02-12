@@ -43,7 +43,8 @@ from .routers import (
     # Additional routers
     geology_router,
     settings_router,
-    resources_router
+    resources_router,
+    csv_export_router
 )
 from .database import engine, Base
 
@@ -227,6 +228,7 @@ app.include_router(analytics_router.router)
 app.include_router(geology_router.router)
 app.include_router(settings_router.router)
 app.include_router(resources_router.router)
+app.include_router(csv_export_router.router)
 
 
 @app.get("/")
