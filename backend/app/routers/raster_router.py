@@ -430,3 +430,78 @@ def get_hillshade_preview(
         raise HTTPException(status_code=501, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# =============================================================================
+# ECW Support (Issue #66)
+# =============================================================================
+
+class ECWConvertRequest(BaseModel):
+    """Request for ECW to GeoTIFF conversion."""
+    ecw_path: str
+    output_path: Optional[str] = None
+
+
+@router.get("/ecw/status")
+def ecw_driver_status():
+    """
+    Check ECW driver availability and provide setup instructions.
+    
+    Returns driver status, whether ECW files can be read, and
+    setup instructions if the driver is not available.
+    """
+    service = get_raster_service()
+    available = service.check_ecw_driver()
+    
+    result = {
+        "ecw_driver_available": available,
+        "read_support": available,
+        "write_support": False,
+        "recommended_format": "GeoTIFF",
+        "license": "Free for desktop read-only (no paid license required)",
+    }
+    
+    if not available:
+        result["setup_instructions"] = service.ECW_SETUP_INSTRUCTIONS
+        result["conversion_endpoint"] = "/raster/convert/ecw-to-geotiff"
+    
+    return result
+
+
+@router.post("/convert/ecw-to-geotiff")
+def convert_ecw_to_geotiff(request: ECWConvertRequest):
+    """
+    Convert an ECW file to GeoTIFF format.
+    
+    Requires the ECW GDAL driver to be installed.
+    GeoTIFF is the recommended primary format for editing and analysis.
+    """
+    service = get_raster_service()
+    
+    try:
+        output = service.convert_ecw_to_geotiff(
+            request.ecw_path,
+            request.output_path,
+        )
+        
+        # Get metadata of converted file
+        metadata = service.get_metadata(output)
+        
+        return {
+            "success": True,
+            "input_path": request.ecw_path,
+            "output_path": output,
+            "format": "GeoTIFF",
+            "width": metadata.width,
+            "height": metadata.height,
+            "band_count": metadata.band_count,
+            "crs_epsg": metadata.crs_epsg,
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=501, detail=str(e))
+    except ImportError as e:
+        raise HTTPException(status_code=501, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

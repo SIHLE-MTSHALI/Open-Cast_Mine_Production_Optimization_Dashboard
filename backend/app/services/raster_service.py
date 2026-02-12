@@ -138,6 +138,15 @@ class RasterService:
         # Cached raster datasets
         self._cache: Dict[str, Any] = {}
     
+    ECW_SETUP_INSTRUCTIONS = (
+        "ECW support requires GDAL compiled with the Hexagon ECW/JP2 SDK.\n"
+        "Setup options:\n"
+        "  Windows:  conda install -c conda-forge gdal (includes ECW driver)\n"
+        "  Linux:    conda install -c conda-forge gdal  OR build GDAL with ECW SDK\n"
+        "  macOS:    conda install -c conda-forge gdal\n"
+        "Alternative: Convert ECW to GeoTIFF using the /raster/convert/ecw-to-geotiff endpoint."
+    )
+
     def _check_dependencies(self):
         """Check required dependencies."""
         if not RASTERIO_AVAILABLE:
@@ -146,6 +155,21 @@ class RasterService:
             )
         if not NUMPY_AVAILABLE:
             raise ImportError("numpy is required for raster operations")
+
+    def check_ecw_driver(self) -> bool:
+        """Check if the ECW GDAL driver is available for reading ECW files."""
+        if not RASTERIO_AVAILABLE:
+            return False
+        try:
+            from osgeo import gdal
+            driver = gdal.GetDriverByName('ECW')
+            return driver is not None
+        except ImportError:
+            # Fallback: try rasterio driver list
+            try:
+                return 'ECW' in rasterio.drivers.raster_driver_extensions()
+            except Exception:
+                return False
     
     # =========================================================================
     # File Operations
@@ -211,6 +235,8 @@ class RasterService:
         """
         Check if a raster file is readable.
         
+        For ECW files, provides specific guidance if the ECW driver is missing.
+        
         Args:
             file_path: Path to raster file
             
@@ -220,12 +246,21 @@ class RasterService:
         if not RASTERIO_AVAILABLE:
             return False, "rasterio not installed"
         
+        # ECW-specific check
+        if file_path.lower().endswith('.ecw') and not self.check_ecw_driver():
+            return False, (
+                f"ECW driver not available. {self.ECW_SETUP_INSTRUCTIONS}"
+            )
+        
         try:
             with rasterio.open(file_path) as src:
                 _ = src.read(1, window=Window(0, 0, 1, 1))
             return True, None
         except Exception as e:
-            return False, str(e)
+            error_msg = str(e)
+            if file_path.lower().endswith('.ecw'):
+                error_msg += f"\n\n{self.ECW_SETUP_INSTRUCTIONS}"
+            return False, error_msg
     
     # =========================================================================
     # Elevation Sampling
@@ -690,17 +725,77 @@ class RasterService:
         
         return inside
     
-    def get_supported_formats(self) -> List[Dict[str, str]]:
-        """Get list of supported raster formats."""
+    def get_supported_formats(self) -> List[Dict[str, Any]]:
+        """Get list of supported raster formats with driver availability."""
+        ecw_available = self.check_ecw_driver()
         formats = [
-            {"format": "geotiff", "extensions": [".tif", ".tiff"], "writable": True},
-            {"format": "ecw", "extensions": [".ecw"], "writable": False},
-            {"format": "jpeg2000", "extensions": [".jp2", ".j2k"], "writable": True},
-            {"format": "mrsid", "extensions": [".sid"], "writable": False},
-            {"format": "ascii_grid", "extensions": [".asc"], "writable": True},
-            {"format": "png", "extensions": [".png"], "writable": True}
+            {"format": "geotiff", "extensions": [".tif", ".tiff"], "writable": True, "available": RASTERIO_AVAILABLE},
+            {"format": "ecw", "extensions": [".ecw"], "writable": False, "available": ecw_available,
+             "note": None if ecw_available else "ECW driver not installed. " + self.ECW_SETUP_INSTRUCTIONS},
+            {"format": "jpeg2000", "extensions": [".jp2", ".j2k"], "writable": True, "available": RASTERIO_AVAILABLE},
+            {"format": "mrsid", "extensions": [".sid"], "writable": False, "available": False},
+            {"format": "ascii_grid", "extensions": [".asc"], "writable": True, "available": RASTERIO_AVAILABLE},
+            {"format": "png", "extensions": [".png"], "writable": True, "available": RASTERIO_AVAILABLE}
         ]
         return formats
+
+    def convert_ecw_to_geotiff(
+        self,
+        ecw_path: str,
+        output_path: Optional[str] = None,
+    ) -> str:
+        """
+        Convert an ECW file to GeoTIFF format.
+        
+        Requires GDAL ECW driver to be available.
+        
+        Args:
+            ecw_path: Path to input ECW file
+            output_path: Path for output GeoTIFF (auto-generated if None)
+            
+        Returns:
+            Path to the output GeoTIFF file
+        """
+        if not RASTERIO_AVAILABLE:
+            raise ImportError("rasterio required for conversion")
+        
+        if not os.path.exists(ecw_path):
+            raise FileNotFoundError(f"ECW file not found: {ecw_path}")
+        
+        if not ecw_path.lower().endswith('.ecw'):
+            raise ValueError("Input file must have .ecw extension")
+        
+        if not self.check_ecw_driver():
+            raise RuntimeError(
+                f"Cannot read ECW files. {self.ECW_SETUP_INSTRUCTIONS}"
+            )
+        
+        # Auto-generate output path
+        if output_path is None:
+            base = os.path.splitext(ecw_path)[0]
+            output_path = f"{base}.tif"
+        
+        self.logger.info(f"Converting ECW to GeoTIFF: {ecw_path} → {output_path}")
+        
+        with rasterio.open(ecw_path) as src:
+            profile = src.profile.copy()
+            profile.update(
+                driver='GTiff',
+                compress='deflate',
+                tiled=True,
+                blockxsize=256,
+                blockysize=256,
+            )
+            
+            with rasterio.open(output_path, 'w', **profile) as dst:
+                for band_idx in range(1, src.count + 1):
+                    # Read in blocks to handle large files
+                    for _, window in src.block_windows(band_idx):
+                        data = src.read(band_idx, window=window)
+                        dst.write(data, band_idx, window=window)
+        
+        self.logger.info(f"Conversion complete: {output_path}")
+        return output_path
 
 
 # =============================================================================
