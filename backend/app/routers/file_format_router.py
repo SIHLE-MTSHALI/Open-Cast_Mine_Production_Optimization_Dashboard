@@ -641,6 +641,124 @@ async def export_dxf(request: ExportRequest):
         raise HTTPException(500, f"Export failed: {str(e)}")
 
 
+@router.post("/export/dxf/contours")
+async def export_dxf_contours(
+    contours: List[Dict[str, Any]] = [],
+    major_interval: float = Query(10.0, description="Major contour interval in Z units"),
+    version: str = Query("R2018", description="DXF version", pattern="^(R12|R2000|R2004|R2007|R2010|R2013|R2018)$"),
+):
+    """
+    Export contour lines to DXF.
+
+    Expects contours as list of dicts with 'elevation' and 'points' keys.
+    Points should be lists of [x, y, z] tuples.
+    
+    Contours at multiples of major_interval are placed on a CONTOUR_MAJOR layer.
+    """
+    try:
+        from pydantic import BaseModel as _Body
+        service = get_dxf_service()
+        config = DXFExportConfig(version=version)
+
+        dxf_bytes = service.export_contours(
+            contours,
+            file_path=None,
+            major_interval=major_interval,
+            config=config,
+        )
+
+        return StreamingResponse(
+            io.BytesIO(dxf_bytes),
+            media_type="application/dxf",
+            headers={"Content-Disposition": "attachment; filename=contours.dxf"}
+        )
+    except ImportError as e:
+        raise HTTPException(500, f"DXF contour export unavailable: {str(e)}")
+    except Exception as e:
+        raise HTTPException(500, f"Contour export failed: {str(e)}")
+
+
+class DXFContourExportBody(BaseModel):
+    """Body for contour export from a list of contour dicts."""
+    contours: List[Dict[str, Any]]
+    major_interval: float = 10.0
+    version: str = "R2018"
+
+
+@router.post("/export/dxf/contours-body")
+async def export_dxf_contours_body(request: DXFContourExportBody):
+    """
+    Export contour lines to DXF from a JSON body.
+    """
+    try:
+        service = get_dxf_service()
+        config = DXFExportConfig(version=request.version)
+
+        dxf_bytes = service.export_contours(
+            request.contours,
+            file_path=None,
+            major_interval=request.major_interval,
+            config=config,
+        )
+
+        return StreamingResponse(
+            io.BytesIO(dxf_bytes),
+            media_type="application/dxf",
+            headers={"Content-Disposition": "attachment; filename=contours.dxf"}
+        )
+    except ImportError as e:
+        raise HTTPException(500, f"DXF contour export unavailable: {str(e)}")
+    except Exception as e:
+        raise HTTPException(500, f"Contour export failed: {str(e)}")
+
+
+@router.post("/parse/dxf/preview")
+async def parse_dxf_preview(file: UploadFile = File(...)):
+    """
+    Parse a DXF and return layer summary for import previewing.
+    
+    Returns layer names with entity counts and types, allowing
+    the user to filter which layers to import.
+    """
+    if not file.filename.lower().endswith('.dxf'):
+        raise HTTPException(400, "File must have .dxf extension")
+
+    content = await file.read()
+
+    try:
+        service = get_dxf_service()
+        result = service.parse_bytes(content, file.filename)
+
+        # Build layer summary
+        layer_summary = {}
+        for entity in result.entities:
+            layer = entity.layer
+            if layer not in layer_summary:
+                layer_summary[layer] = {
+                    "name": layer,
+                    "entity_count": 0,
+                    "types": {},
+                    "point_count": 0,
+                }
+            layer_summary[layer]["entity_count"] += 1
+            layer_summary[layer]["point_count"] += len(entity.points)
+            etype = entity.entity_type.value
+            layer_summary[layer]["types"][etype] = layer_summary[layer]["types"].get(etype, 0) + 1
+
+        return {
+            "filename": result.filename,
+            "version": result.version,
+            "layers": list(layer_summary.values()),
+            "total_entities": result.entity_count,
+            "total_layers": len(layer_summary),
+            "extent_min": [result.extent_min.x, result.extent_min.y, result.extent_min.z] if result.extent_min else None,
+            "extent_max": [result.extent_max.x, result.extent_max.y, result.extent_max.z] if result.extent_max else None,
+        }
+    except Exception as e:
+        raise HTTPException(500, f"DXF preview failed: {str(e)}")
+
+
+
 @router.post("/export/surpac")
 async def export_surpac(request: ExportRequest):
     """
