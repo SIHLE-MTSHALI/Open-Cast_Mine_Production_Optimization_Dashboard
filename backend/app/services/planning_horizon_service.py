@@ -177,23 +177,43 @@ class PlanningHorizonService:
             if not child_targets:
                 continue
 
-            # Simple even split of parent totals across child periods
+            # Aggregate parent totals first, then distribute evenly
             n_child = len(child_targets)
-            for pt in parent_targets:
-                for ct in child_targets:
-                    if pt.target_total_tonnes is not None:
-                        ct.target_total_tonnes = (
-                            pt.target_total_tonnes / n_child
-                        )
-                    if pt.target_ore_tonnes is not None:
-                        ct.target_ore_tonnes = pt.target_ore_tonnes / n_child
-                    if pt.target_waste_tonnes is not None:
-                        ct.target_waste_tonnes = pt.target_waste_tonnes / n_child
-                    if pt.target_stripping_ratio is not None:
-                        ct.target_stripping_ratio = pt.target_stripping_ratio
-                    if pt.quality_targets is not None:
-                        ct.quality_targets = pt.quality_targets
-                    updated += 1
+            total_tonnes = sum(
+                pt.target_total_tonnes for pt in parent_targets
+                if pt.target_total_tonnes is not None
+            )
+            ore_tonnes = sum(
+                pt.target_ore_tonnes for pt in parent_targets
+                if pt.target_ore_tonnes is not None
+            )
+            waste_tonnes = sum(
+                pt.target_waste_tonnes for pt in parent_targets
+                if pt.target_waste_tonnes is not None
+            )
+            # Stripping ratio and quality targets: use parent average / first non-null
+            strip_ratios = [
+                pt.target_stripping_ratio for pt in parent_targets
+                if pt.target_stripping_ratio is not None
+            ]
+            avg_strip = sum(strip_ratios) / len(strip_ratios) if strip_ratios else None
+            quality = next(
+                (pt.quality_targets for pt in parent_targets if pt.quality_targets is not None),
+                None,
+            )
+
+            for ct in child_targets:
+                if total_tonnes:
+                    ct.target_total_tonnes = total_tonnes / n_child
+                if ore_tonnes:
+                    ct.target_ore_tonnes = ore_tonnes / n_child
+                if waste_tonnes:
+                    ct.target_waste_tonnes = waste_tonnes / n_child
+                if avg_strip is not None:
+                    ct.target_stripping_ratio = avg_strip
+                if quality is not None:
+                    ct.quality_targets = quality
+                updated += 1
 
         self.db.commit()
         return {"parent_horizon_id": parent_horizon_id, "children": len(children), "targets_updated": updated}
