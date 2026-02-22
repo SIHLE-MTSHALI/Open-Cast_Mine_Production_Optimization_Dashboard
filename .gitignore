@@ -14,7 +14,7 @@ dist/
 .idea/
 
 # Project Specific
-data/
+/data/
 *.log
 backend/mineopt_pro.db
 *.db
