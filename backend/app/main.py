@@ -47,7 +47,8 @@ from .routers import (
     csv_export_router,
     planning_horizon_router,
     precedence_router,
-    demand_router
+    demand_router,
+    health_router
 )
 from .database import engine, Base
 
@@ -235,25 +236,16 @@ app.include_router(csv_export_router.router)
 app.include_router(planning_horizon_router.router)
 app.include_router(precedence_router.router)
 app.include_router(demand_router.router)
+app.include_router(health_router.router)
 
 
 @app.get("/")
-def health_check():
-    """API health check endpoint."""
+def root_check():
+    """API root endpoint."""
     return {
         "status": "healthy",
         "message": "MineOpt Pro Server Running",
         "version": "2.0.0-Enterprise",
         "tables_registered": len(Base.metadata.tables)
-    }
-
-
-@app.get("/health")
-def health_probe():
-    """Container/runtime health probe endpoint."""
-    return {
-        "status": "healthy",
-        "service": "mineopt-api",
-        "version": "2.0.0-Enterprise"
     }
 
