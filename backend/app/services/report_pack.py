@@ -56,11 +56,14 @@ class ReportPackGenerator:
         """Generate daily production summary."""
         from ..domain import models_scheduling as ms
 
-        # Fetch day's schedule tasks
+        # Fetch day's schedule tasks (Task has no site_id — join via ScheduleVersion)
         try:
-            tasks = self.db.query(ms.Task).filter(
-                ms.Task.site_id == site_id,
-            ).all()
+            tasks = (
+                self.db.query(ms.Task)
+                .join(ms.ScheduleVersion, ms.Task.schedule_version_id == ms.ScheduleVersion.version_id)
+                .filter(ms.ScheduleVersion.site_id == site_id)
+                .all()
+            )
         except Exception as e:
             logger.warning("Could not query scheduling tasks: %s", e)
             tasks = []

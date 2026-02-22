@@ -203,11 +203,11 @@ class PlanningHorizonService:
             )
 
             for ct in child_targets:
-                if total_tonnes:
+                if total_tonnes is not None:
                     ct.target_total_tonnes = total_tonnes / n_child
-                if ore_tonnes:
+                if ore_tonnes is not None:
                     ct.target_ore_tonnes = ore_tonnes / n_child
-                if waste_tonnes:
+                if waste_tonnes is not None:
                     ct.target_waste_tonnes = waste_tonnes / n_child
                 if avg_strip is not None:
                     ct.target_stripping_ratio = avg_strip
