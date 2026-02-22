@@ -1,2155 +1,2314 @@
-# MineOpt Pro
+# ⛏️ MineOpt Pro — Open-Cast Mine Production Optimization Dashboard
 
-<div align="center">
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev)
+[![Three.js](https://img.shields.io/badge/Three.js-0.182-black.svg)](https://threejs.org)
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
-![Python](https://img.shields.io/badge/python-3.10+-green)
-![React](https://img.shields.io/badge/react-19+-61DAFB)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688)
-![Three.js](https://img.shields.io/badge/Three.js-0.182+-black)
-
-**Open-Cast Mine Production Scheduling and Optimization System**
-
-[Quick Start](#-quick-start-for-beginners) • [All Features](#-complete-feature-list) • [Visual Validation](#-end-to-end-visual-validation-checklist) • [Setup Options](#-setup-options) • [Usage Guide](#-detailed-usage-guide) • [API Reference](#-api-reference) • [Limitations](#-current-limitations--known-gaps-february-2026) • [Future Work](#-future-work-roadmap-to-commercial-readiness) • [Troubleshooting](#-troubleshooting)
-
-</div>
+> **MineOpt Pro** is a full-stack, enterprise-grade open-cast mine production optimization platform.
+> It integrates scheduling, quality management, 3D visualization, fleet tracking, drill & blast planning,
+> environmental monitoring, and real-time collaboration into a single unified dashboard — purpose-built
+> for modern mining operations.
 
 ---
 
-## 📖 What is MineOpt Pro?
+## Table of Contents
 
-MineOpt Pro is a **comprehensive, full-stack web application** designed for open-cast mining operations. It helps mining engineers, schedulers, and supervisors to:
-
-- **📅 Plan and optimize production schedules** with 12-hour shift granularity
-- **🧪 Manage material blending** to meet quality targets with Monte Carlo simulation
-- **🚚 Track equipment fleet** in real-time with GPS and geofencing
-- **💥 Design drill & blast patterns** with fragmentation prediction using Kuz-Ram model
-- **📍 Monitor slope stability** and environmental conditions
-- **📊 Generate reports** and interactive analytics dashboards
-- **🗺️ Visualize mine operations** in 3D with interactive terrain surfaces
-- **🔄 Integrate with external systems** (SCADA, SAP, Oracle)
-
-Whether you're a complete beginner or an experienced developer, this guide will help you get MineOpt Pro running on your machine.
-
----
-
-## 📍 Read This First (Important)
-
-This README is intentionally long and operational. It is designed so:
-
-- a non-technical planner can install and run the system
-- a technical user can verify architecture, APIs, and module boundaries
-- both users can understand current limitations and in-progress work
-
-### Current-State Promise (as of February 8, 2026)
-
-MineOpt Pro has broad backend and frontend coverage, and the product runs locally with meaningful workflows.  
-At the same time, some advanced workflows are still in hardening and integration phases.
-
-To keep this honest and useful:
-
-- each major section includes practical verification guidance
-- limitations are documented in a dedicated section
-- future work is explicitly mapped for commercial-product readiness
-
-### Visual Confirmation Legend Used in This Guide
-
-You will repeatedly see these validation markers:
-
-- `✅` means expected successful state
-- `⚠️` means warning or partial state that still allows progress
-- `❌` means blocked state requiring action before proceeding
-- `👀 You should see` means exact visual cue to confirm
-
-### Minimum Success Criteria for a "Good Install"
-
-You should be able to verify all of the following:
-
-1. Backend health endpoint returns healthy response.
-2. Backend API docs open in browser.
-3. Frontend loads and shows landing/login flow.
-4. You can register/login and reach dashboard.
-5. You can open planner and navigate tabs.
-6. You can run seed data and see new entities in planner modules.
-
-If any one of these fails, jump to [🐛 Troubleshooting](#-troubleshooting) before continuing.
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Screenshots and UI Guide](#screenshots-and-ui-guide)
+4. [Architecture Overview](#architecture-overview)
+5. [Technology Stack](#technology-stack)
+6. [Getting Started](#getting-started)
+7. [Installation Guide](#installation-guide)
+8. [Configuration Reference](#configuration-reference)
+9. [Running the Application](#running-the-application)
+10. [Docker Deployment](#docker-deployment)
+11. [Project Structure](#project-structure)
+12. [Backend API Reference](#backend-api-reference)
+13. [Frontend Components Reference](#frontend-components-reference)
+14. [Domain Models](#domain-models)
+15. [Scheduling and Optimization Engine](#scheduling-and-optimization-engine)
+16. [Quality Management System](#quality-management-system)
+17. [3D Visualization and CAD Tools](#3d-visualization-and-cad-tools)
+18. [Geology and Geotechnical](#geology-and-geotechnical)
+19. [Fleet Management System](#fleet-management-system)
+20. [Drill and Blast Planning](#drill-and-blast-planning)
+21. [Environmental Monitoring](#environmental-monitoring)
+22. [Reporting and Export](#reporting-and-export)
+23. [Collaboration and Real-Time Features](#collaboration-and-real-time-features)
+24. [Data Management Hub](#data-management-hub)
+25. [Security and Authentication](#security-and-authentication)
+26. [Tools and Workflows](#tools-and-workflows)
+27. [UI Components and Design System](#ui-components-and-design-system)
+28. [Testing Guide](#testing-guide)
+29. [Troubleshooting Guide](#troubleshooting-guide)
+30. [Frequently Asked Questions](#frequently-asked-questions)
+31. [Performance Tuning](#performance-tuning)
+32. [Contributing](#contributing)
+33. [Future Work and Roadmap](#future-work-and-roadmap)
+34. [Changelog](#changelog)
+35. [License](#license)
 
 ---
 
-## 🚀 Quick Start for Beginners
+## Overview
 
-> **Complete Step-by-Step Guide** - Follow these instructions exactly in order. Each step must complete successfully before moving to the next.
+MineOpt Pro addresses the core challenge every open-cast mine faces: **how do you move the right
+material, at the right time, to the right destination, while meeting quality specifications, fleet
+constraints, and environmental regulations?**
 
-### Step 0: Check Your System Requirements
+Traditional mine planning relies on disconnected spreadsheets, siloed geological models, and manual
+scheduling. MineOpt Pro replaces this fragmented approach with an integrated digital platform.
 
-Before installing anything, make sure your computer has these programs. Open a command prompt (Windows) or terminal (Mac/Linux) and run each check command:
+### What MineOpt Pro Does
 
-| Requirement | Minimum Version | How to Check | What to Install |
-|-------------|-----------------|--------------|-----------------|
-| **Python** | 3.10 or higher | `python --version` | Download from [python.org](https://python.org) |
-| **Node.js** | 18 or higher | `node --version` | Download from [nodejs.org](https://nodejs.org) |
-| **Git** | Any version | `git --version` | Download from [git-scm.com](https://git-scm.com) |
-| **npm** | 9 or higher | `npm --version` | Comes with Node.js |
+| Capability | Description |
+|-----------|-------------|
+| **Production Scheduling** | Multi-horizon planning with CP-SAT and LP solvers, Gantt chart editing, shift calendars |
+| **Quality Management** | Monte Carlo simulation, washability analysis, penalty curves, demand chain tracking |
+| **3D Visualization** | WebGL terrain, block models, surface timelines, CAD string editing, annotations |
+| **Fleet Management** | GPS tracking, geofencing, haul cycle analysis, route optimization, maintenance |
+| **Drill & Blast** | Pattern planning, fragmentation modeling, cost estimation, blast-to-mine linking |
+| **Environmental** | Dust, noise, water quality monitoring, rehabilitation tracking, compliance dashboards |
+| **Reporting** | Automated report packs, reconciliation, management KPIs, CSV/PDF export, email delivery |
+| **Collaboration** | Real-time presence, edit locking, audit trail, version control |
 
-**Example output you should see:**
-```
-C:\Users\YourName> python --version
-Python 3.11.4
+### Who Is This For?
 
-C:\Users\YourName> node --version
-v18.17.0
+| Audience | What You Get |
+|----------|-------------|
+| **Mine Planners** | Multi-horizon scheduling, Gantt charts, precedence management, shift calendars |
+| **Geologists** | Borehole management, seam modeling, block model visualization, kriging interpolation |
+| **Processing Engineers** | Washability analysis, penalty curves, demand chain dashboards, quality simulation |
+| **Fleet Managers** | Real-time GPS tracking, maintenance scheduling, haul route optimization, cycle analysis |
+| **Environmental Officers** | Dust/noise monitoring, water quality, rehabilitation planning, compliance reports |
+| **Mine Managers** | KPI dashboards, reconciliation, management report packs, variance analysis |
+| **Software Developers** | Clean REST API (40 routers), React component library, extensible architecture |
+| **Students & Researchers** | Open-source reference implementation of modern mine planning concepts |
 
-C:\Users\YourName> npm --version
-9.6.7
+### Non-Technical Summary
 
-C:\Users\YourName> git --version
-git version 2.41.0.windows.1
-```
+If you manage or work at an open-cast mine, MineOpt Pro gives you a **single web-based dashboard**
+where you can:
 
-> ⚠️ **If any command says "not recognized" or "command not found"**, you need to install that program first before continuing.
+- 📅 **Plan what to mine and when** — drag tasks on a Gantt chart, set production targets per week/month/year
+- 🧪 **Manage coal or ore quality** — see predicted quality before mining, optimize blending to meet customer specs
+- 🗺️ **View your mine in 3D** — rotate, zoom, and query terrain surfaces, pit designs, and geological models
+- 🚛 **Track your fleet** — see where trucks and excavators are in real-time, monitor fuel and maintenance
+- 💣 **Plan blasting** — design drill patterns, estimate fragmentation, calculate explosives costs
+- 🌿 **Stay compliant** — monitor dust, noise, and water levels against regulatory thresholds
+- 📊 **Generate reports** — daily production summaries, quality compliance, management KPI packs
+- 👥 **Work together** — see who else is editing, avoid conflicts, track all changes
 
----
-
-### Step 1: Download the Project
-
-Open your command prompt/terminal and run:
-
-```bash
-# Navigate to where you want to download the project
-# For example, your Documents folder:
-cd Documents
-
-# Clone (download) the repository
-git clone https://github.com/SIHLE-MTSHALI/MineOpt-pro.git
-
-# Navigate into the project folder
-cd MineOpt-pro
-```
-
-**What this does:** Downloads all the project files from GitHub to your computer.
-
-**👀 You should see:**
-- `Cloning into 'MineOpt-pro'...`
-- A completed download summary with object counts.
-- No authentication error if repository is public.
-
-**✅ Step 1 complete when:**
-- A folder named `MineOpt-pro` exists on your machine.
-- Running `dir` (Windows) or `ls` (Mac/Linux) in the parent directory shows that folder.
+No special software installation is needed — it runs in your web browser.
 
 ---
 
-### Step 2: Set Up the Backend (Python Server)
-
-The backend is the "brain" of the application - it processes data and handles all the logic.
-
-```bash
-# Navigate to the backend folder
-cd backend
-
-# Create a virtual environment (isolated Python environment)
-python -m venv venv
-
-# Activate the virtual environment
-# On Windows (Command Prompt):
-venv\Scripts\activate
-
-# On Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-
-# On Windows (Git Bash):
-source venv/Scripts/activate
-
-# On Mac/Linux:
-source venv/bin/activate
-```
-
-**You should see `(venv)` at the beginning of your command line when activated:**
-```
-(venv) C:\Users\YourName\Documents\MineOpt-pro\backend>
-```
-
-Now install the required Python packages:
-
-```bash
-# Install all Python dependencies (this may take 2-5 minutes)
-pip install -r requirements.txt
-```
-
-**What this installs:**
-- FastAPI (web framework)
-- SQLAlchemy (database)
-- NumPy & Pandas (data processing)
-- SciPy (optimization algorithms)
-- PyKrige (geostatistics)
-- And many more...
-
-**👀 You should see:**
-- Download/install logs for Python packages.
-- Final message similar to `Successfully installed ...`
-- No fatal errors about missing compiler/toolchain.
-
-**✅ Step 2 complete when:**
-- Your prompt still shows `(venv)`.
-- `python -c "import fastapi; print('ok')"` prints `ok`.
-
----
-
-### Step 3: Start the Backend Server
-
-With the virtual environment still activated:
-
-```bash
-# Start the backend server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-**Success looks like this:**
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [12345] using WatchFiles
-INFO:     Started server process [12346]
-INFO:     Waiting for application startup.
-Database initialized with 50 tables
-INFO:     Application startup complete.
-```
-
-> **✅ Keep this terminal window open and running!** The backend must stay running while you use the application.
-
-> **📌 Tip:** You can verify the backend is working by opening a web browser and going to: http://localhost:8000/docs - You should see the interactive API documentation.
-
-**👀 You should see in browser:**
-- Swagger UI page title similar to `MineOpt Pro Enterprise API`.
-- Endpoints grouped by tags (auth, schedule, quality, flow, raster, etc.).
-
-**✅ Step 3 complete when:**
-- `http://localhost:8000/health` returns JSON with healthy status.
-- Backend terminal keeps running without repeated crash/restart loops.
-
----
-
-### Step 4: Set Up the Frontend (New Terminal Window)
-
-**Open a NEW terminal/command prompt window** (keep the backend running in the first one).
-
-```bash
-# Navigate to the project's frontend folder
-cd frontend
-
-# Install all JavaScript dependencies (this may take 2-5 minutes)
-npm install
-```
-
-**What this installs:**
-- React 19 (user interface framework)
-- Three.js (3D visualization)
-- Leaflet (interactive maps)
-- Recharts (charts and graphs)
-- And more...
-
-**👀 You should see:**
-- `added ... packages` (or equivalent npm success output)
-- No `npm ERR!` fatal line at the end
-
-**✅ Step 4 complete when:**
-- `node_modules` exists in the `frontend` folder.
-- `npm run dev` is available without script-not-found errors.
-
----
-
-### Step 5: Start the Frontend Development Server
-
-```bash
-# Start the frontend development server
-npm run dev
-```
-
-**Success looks like this:**
-```
-  VITE v7.2.4  ready in 500 ms
-
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: http://192.168.1.100:5173/
-  ➜  press h + enter to show help
-```
-
-**👀 You should see:**
-- A local URL, usually `http://localhost:5173/`.
-- No immediate Vite crash after startup.
-
-**✅ Step 5 complete when:**
-- Opening the local URL loads the app shell (not a browser error page).
-
----
-
-### Step 6: Open the Application
-
-1. Open your web browser (Chrome, Firefox, or Edge recommended)
-2. Go to: **http://localhost:5173**
-3. You should see the MineOpt Pro landing page!
-
-**👀 You should see on screen:**
-- A branded landing page with a start/login call-to-action.
-- No blank white page and no fatal red overlay.
-
-**🎉 Congratulations! MineOpt Pro is now running on your computer!**
-
----
-
-### Step 7: Create an Account and Log In
-
-1. Click **"Get Started"** on the landing page
-2. Click **"Register"** to create a new account
-3. Fill in:
-   - Email address (e.g., `admin@example.com`)
-   - Password (at least 6 characters)
-4. Click **"Register"**
-5. You'll be automatically logged in and see the Site Dashboard
-
-**👀 You should see on screen:**
-- Authentication form accepts your input.
-- After submit, browser redirects to `/app/dashboard`.
-- Sidebar/menu appears with planning and operations entries.
-
-**✅ Step 7 complete when:**
-- Refreshing dashboard keeps you logged in (token stored).
-
----
-
-### Step 8: Generate Sample Data (Recommended for Testing)
-
-To see the application's features in action with demo data:
-
-1. From the Site Dashboard, click **"Open Planner"** in the sidebar
-2. Click the **"Seed Data"** button in the toolbar
-3. This will generate sample sites, equipment, schedules, and more
-
-**👀 You should see on screen:**
-- Success toast/notification after seed operation.
-- Planner modules show populated entities (resources, areas, schedules, etc.).
-
-**✅ Step 8 complete when:**
-- Planner tabs show non-empty datasets.
-- Dashboard cards/summary values are no longer all empty.
-
----
-
-## ✅ End-to-End Visual Validation Checklist
-
-Use this checklist immediately after installation.  
-This section is written so a user can confirm success by looking at the screen, without guessing.
-
-### A. Startup Validation (System Health)
-
-| Check | Where to look | Expected visual result | Status |
-|------|------|------|------|
-| Backend process | Backend terminal | `Application startup complete` and no crash loop | ⬜ |
-| Backend health URL | Browser → `http://localhost:8000/health` | JSON response with `"status": "healthy"` | ⬜ |
-| API docs | Browser → `http://localhost:8000/docs` | Swagger UI loads with endpoint groups | ⬜ |
-| Frontend process | Frontend terminal | Vite local URL line present | ⬜ |
-| Frontend app | Browser → `http://localhost:5173` | Landing page loads with action buttons | ⬜ |
-
-### B. Authentication Validation
-
-| Check | Action | Expected visual result | Status |
-|------|------|------|------|
-| Register user | Open register form and submit | Redirect to dashboard | ⬜ |
-| Login persistence | Refresh page | User remains logged in | ⬜ |
-| Protected routing | Open `/app/dashboard` without login in fresh session | Redirect to `/login` if not authenticated | ⬜ |
-
-### C. Dashboard Validation
-
-| Check | Action | Expected visual result | Status |
-|------|------|------|------|
-| Dashboard loads | Open `/app/dashboard` | KPI cards and summary panels visible | ⬜ |
-| Navigation menu | Inspect sidebar | Planning, Operations, Monitoring, Configuration links visible | ⬜ |
-| Seed data entry | Open Seed Data page | Seed controls and status feedback visible | ⬜ |
-
-### D. Planner Navigation Validation
-
-Open each route and confirm the module renders.
-
-| Route | Expected visual result | Status |
-|------|------|------|
-| `/app/planner?tab=spatial` | Spatial/3D planning workspace and related controls | ⬜ |
-| `/app/planner?tab=gantt` | Gantt scheduling view with timeline/task region | ⬜ |
-| `/app/planner?tab=schedule-control` | Schedule control panel with run controls | ⬜ |
-| `/app/planner?tab=reporting` | Reports/analytics module | ⬜ |
-| `/app/planner?tab=flow-editor` | Flow network editor panel | ⬜ |
-| `/app/planner?tab=product-specs` | Product and quality specifications UI | ⬜ |
-| `/app/planner?tab=resources` | Resource management content | ⬜ |
-| `/app/planner?tab=geology` | Geology/block model content | ⬜ |
-| `/app/planner?tab=data` | Stockpile/data tab content | ⬜ |
-| `/app/planner?tab=import` | Import workflow UI | ⬜ |
-| `/app/planner?tab=integrations` | Integration mapping/config UI | ⬜ |
-| `/app/planner?tab=settings` | Settings panel | ⬜ |
-
-### E. Operations Module Validation
-
-| Route | Expected visual result | Status |
-|------|------|------|
-| `/app/fleet` | Fleet dashboard widgets/panels visible | ⬜ |
-| `/app/drill-blast` | Drill & blast page content visible | ⬜ |
-| `/app/operations` | Shift operations and handover content visible | ⬜ |
-| `/app/monitoring` | Monitoring dashboard content visible | ⬜ |
-
-### F. Data Import and File Workflow Validation
-
-1. Open planner import tab.
-2. Upload a small CSV test file.
-3. Confirm preview renders.
-4. Confirm column mapping/validation view appears (if required by import type).
-
-**👀 You should see:**
-- file recognized in uploader
-- preview rows or parse summary
-- no unhandled frontend exception
-
-### G. API and Data Service Validation
-
-Use Swagger (`/docs`) and run quick checks:
-
-1. `GET /files/formats` returns supported formats list.
-2. `GET /crs/systems` returns CRS options.
-3. `GET /raster/formats` returns available raster driver summary.
-
-**👀 You should see:**
-- HTTP 200 responses
-- JSON payload (not HTML error page)
-
-### H. Final Acceptance Check
-
-Mark installation successful only if all are true:
-
-- You can log in and navigate every main menu area.
-- Planner tabs open through URL query navigation.
-- Seed data creates visible planner entities.
-- API docs and health endpoints respond.
-- No critical blank screens or repeated crash loops.
-
-If any line fails, go directly to [🐛 Troubleshooting](#-troubleshooting) and resolve before production-style use.
-
----
-
-## 📋 Complete Feature List
-
-MineOpt Pro includes **13+ major modules** with **50+ features**. Here's everything you can do:
-
-> **Status note:** This list is the full platform capability map. Some items are fully operational today and some are in partial/hardening state.  
-> Use [⚠️ Current Limitations & Known Gaps](#-current-limitations--known-gaps-february-2026) for the transparent maturity view.
-
-### 🏠 Dashboard & Overview
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Site Dashboard** | Overview of key metrics (planned tonnes, variance, quality compliance) | Home page after login |
-| **KPI Cards** | Real-time production metrics | Dashboard top section |
-| **Active Schedule Summary** | Current schedule status with optimization details | Dashboard center |
-| **Stockpile Status** | Current stockpile levels with visual progress bars | Dashboard side panel |
-| **Quick Actions** | Run Fast Pass, Create Scenario, View Reports, Site Settings | Dashboard action buttons |
-| **Alerts Panel** | Recent notifications, warnings, and system alerts | Dashboard alerts section |
-
----
-
-### 📅 Scheduling Module
-
-The heart of MineOpt Pro - plan and optimize your mine production schedules.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Gantt Chart** | Visual timeline of all scheduled tasks | Planner Workspace → Schedule tab |
-| **Drag & Drop Tasks** | Move tasks to different time slots by dragging | Click and drag any task bar |
-| **Split Task** | Divide a task across multiple periods | Right-click task → "Split Task" |
-| **Merge Tasks** | Combine multiple tasks into one | Select tasks → Right-click → "Merge" |
-| **Change Resource** | Reassign tasks to different equipment | Right-click task → "Change Resource" |
-| **Rate Factor Editing** | Adjust production rates inline | Click task → edit rate input |
-| **Precedence Validation** | Enforce task dependencies and sequences | Automatic when scheduling |
-| **Fast Pass Optimization** | Quick schedule optimization (~3 seconds) | Click "Fast Pass" button |
-| **Full Optimization** | Complete optimization pass (~60 seconds) | Click "Full Optimize" button |
-| **Scenario Comparison** | Compare different scheduling scenarios | Create Scenario → Compare |
-
-#### How to Create a Schedule:
-
-1. Navigate to **Planner Workspace** → **Schedule** tab
-2. Click **"New Schedule"**
-3. Select the calendar period (start date, end date)
-4. Choose which resources (equipment) to include
-5. Click **"Fast Pass"** for quick scheduling
-6. Review the Gantt chart and adjust as needed
-7. Click **"Publish"** when satisfied
-
-#### Gantt Chart Context Menu (Right-Click Options):
-
-- ✏️ **Edit Task** - Modify task properties (quantity, notes, breakdown indicators)
-- ✂️ **Split Task** - Divide task with percentage and target period
-- 📋 **Duplicate** - Create a copy of the task
-- 🔄 **Change Resource** - Reassign to different equipment
-- 📊 **View Explanation** - See why the optimizer made this decision
-- 🗑️ **Delete Task** - Remove the task from schedule
-
----
-
-### 🗺️ 3D Visualization & Spatial Module
-
-Interactive 3D view of your mine with advanced terrain visualization.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **3D Terrain Viewer** | Interactive 3D mine visualization | Planner Workspace → 3D View tab |
-| **Surface Timeline** | Play back surface changes over time | Timeline scrubber in 3D view |
-| **Surface Comparison** | Compare two surfaces side-by-side | Compare button in toolbar |
-| **Cut/Fill Volumes** | Calculate volume differences between surfaces | After comparison |
-| **Excavation Progress Chart** | Cumulative excavation visualization | Progress tab in 3D view |
-| **3D Measurements** | Measure points, distances, and areas | Measurement toolbar |
-| **LOD Settings** | Adjust render quality for performance | Settings → Graphics |
-| **Activity Area Renderer** | Visualize mining blocks and areas | Auto-displayed in 3D view |
-| **Block Model Renderer** | Display block model grades and properties | Enable in view options |
-| **Borehole Renderer** | Show drillhole locations and data | Enable in view options |
-| **Stockpile Renderer** | Visualize stockpile locations | Enable in view options |
-| **Haulage Renderer** | Display haul roads and routes | Enable in view options |
-
-#### 3D Navigation Controls:
-
-| Control | Action |
-|---------|--------|
-| Left mouse + drag | Rotate view |
-| Right mouse + drag | Pan view |
-| Scroll wheel | Zoom in/out |
-| Double-click | Focus on clicked point |
-| Shift + drag | Measure distance |
-
----
-
-### 🚚 Fleet Management System
-
-Track and manage your entire mining fleet in real-time.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **GPS Tracking** | Live location of all equipment on the map | Fleet → Map View |
-| **Fleet Map Overlay** | Equipment icons on interactive Leaflet map | Fleet → Map View |
-| **Equipment Detail Card** | Popup with status, hours, and controls | Click equipment icon |
-| **Geofencing** | Set restricted zones and get violation alerts | Fleet → Geofences |
-| **Geofence Violations** | Track equipment entering restricted areas | Fleet → Violations log |
-| **Haul Cycle Analysis** | Automatic detection of loading, hauling, dumping cycles | Fleet → Haul Cycles |
-| **Haul Cycle KPIs** | Cycle time, queue time, payload metrics | Fleet → Analytics |
-| **Maintenance Calendar** | Gantt-style view for planned maintenance | Fleet → Maintenance |
-| **Maintenance Scheduling** | Schedule PM services and repairs | Fleet → Schedule Maintenance |
-| **Equipment Health Dashboard** | ML-based failure prediction with risk scores | Fleet → Health |
-| **Component Life Tracking** | Track engine hours, tire wear, etc. | Equipment Detail Card |
-
-#### How to Track Equipment:
-
-1. Go to **Fleet** → **Map View**
-2. See all equipment locations in real-time on the map
-3. Click any equipment icon to see:
-   - Current status (operating, idle, down)
-   - Today's operating hours
-   - Current task/destination
-   - Recent haul cycles
-4. View haul cycle metrics in the **Analytics** tab
-
----
-
-### 💥 Drill & Blast Module
-
-Design blast patterns and predict fragmentation.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Pattern Designer** | Interactive 2D grid for hole placement | Drill & Blast → Designer |
-| **Burden/Spacing Config** | Set blast pattern parameters | Pattern properties panel |
-| **Hole Placement** | Click to place drill holes on grid | Click on grid |
-| **Delay Timing** | Visual delay sequence visualization | Delays tab |
-| **Delay Numbering** | Assign delay numbers for sequencing | Click hole → set delay |
-| **Kuz-Ram Prediction** | Calculate expected fragmentation (X50 size) | Click "Predict Fragmentation" |
-| **Drill Log Generation** | Export drill hole specifications | Export → Drill Log |
-| **Fragmentation Model** | Configure rock factor and other parameters | Settings → Blast Config |
-
-#### How to Design a Blast Pattern:
-
-1. Go to **Drill & Blast** → **Pattern Designer**
-2. Click **"New Pattern"**
-3. Set parameters:
-   - **Burden:** Distance between rows (typically 4-6m)
-   - **Spacing:** Distance between holes in a row (typically 5-7m)
-   - **Hole Diameter:** In millimeters
-   - **Bench Height:** Height of the bench being blasted
-4. Click on the grid to place drill holes
-5. Assign delay numbers to each hole (sequence of detonation)
-6. Click **"Predict Fragmentation"** to see expected P80 size
-7. Export drill log for field crew
-
----
-
-### 📦 Material Tracking & Shift Operations
-
-Track material movements and manage shift handovers.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Load Tickets** | Record each truck load with origin, destination, tonnage | Operations → Tickets |
-| **Material Flow Sankey** | Visual diagram of material movements | Operations → Flow Diagram |
-| **Shift Handover Form** | Digital handover with notes and tasks | Operations → Handover |
-| **Shift Log** | Record shift events and activities | Operations → Shift Log |
-| **Incident Logging** | Record and track safety incidents | Operations → Incidents |
-| **Reconciliation** | Compare planned vs actual production | Operations → Reconciliation |
-
-#### How to Record a Load Ticket:
-
-1. Go to **Operations** → **Load Tickets**
-2. Click **"New Ticket"**
-3. Fill in:
-   - Truck fleet number
-   - Origin (pit, block, bench)
-   - Destination (stockpile, dump, ROM)
-   - Tonnes (weight)
-   - Material type
-4. Click **"Submit"**
-
----
-
-### 🏔️ Geotechnical Monitoring
-
-Monitor slope stability and water levels for safety.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Prism Monitoring** | Track survey prism movements | Monitoring → Slopes |
-| **Displacement Alerts** | Automatic alerts when thresholds exceeded | Configured in Settings |
-| **Displacement History** | Historical movement graphs | Click prism → History |
-| **Water Level Tracking** | Monitor bore water levels | Monitoring → Water |
-| **Trend Analysis** | Visualize movement trends over time | Monitoring → Trends |
-| **Hazard Zones** | Define exclusion and hazard areas on map | Monitoring → Hazards |
-| **Zone Violations** | Track equipment entering hazard zones | Monitoring → Violations |
-
-#### How to Monitor Slope Stability:
-
-1. Go to **Monitoring** → **Slope Stability**
-2. View prism status cards with color-coded alerts:
-   - 🟢 Green: Normal (< 5mm movement)
-   - 🟡 Yellow: Warning (5-15mm movement)
-   - 🔴 Red: Alert (> 15mm movement)
-3. Click a prism to see detailed displacement history
-4. Set alert thresholds in **Settings** → **Geotech**
-
----
-
-### 🌬️ Environmental Monitoring
-
-Track dust levels and air quality.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Dust Monitoring** | PM10 and PM2.5 real-time readings | Monitoring → Environment |
-| **Exceedance Alerts** | Automatic alerts when limits exceeded | Configured in Settings |
-| **Historical Trends** | View readings over time | Environment → History |
-| **Weather Integration** | Wind speed and direction display | Environment → Weather |
-
----
+## Key Features
+
+### 🗓️ Production Scheduling
+
+- **Multi-horizon planning** — strategic (yearly), tactical (monthly), operational (weekly/shift)
+- **Constraint programming** — Google OR-Tools CP-SAT solver with configurable objectives
+- **Linear programming** — Multi-period material allocation and blending optimization
+- **Precedence management** — Block-to-block mining sequence constraints with visual editor
+- **Interactive Gantt chart** — Drag-and-drop schedule visualization with critical path highlighting
+- **Shift calendar builder** — Define shifts, public holidays, weather stoppages, maintenance windows
+- **Schedule diagnostics** — Infeasibility detection, binding constraint analysis, optimizer delay tracking
+- **Variable rate control** — Override equipment production rates per period for what-if analysis
+- **Async execution** — Background schedule runs with WebSocket progress updates
+- **Schedule versioning** — Immutable schedule snapshots with diff comparison
+- **Flow network validation** — Material routing with capacity constraints and quality objectives
 
 ### 🧪 Quality Management
 
-Manage material quality and run simulations.
+- **Monte Carlo simulation** — Probabilistic quality forecasting across blended material streams
+- **Washability analysis** — Interactive yield/ash curves with density cutpoint optimization
+- **Penalty curve editor** — Define quality penalties per parameter and visualize financial impact
+- **Demand chain dashboard** — Track customer quality specs against planned production per period
+- **Lab results import** — Parse CSV/TXT lab exports with delayed-data handling
+- **Quality compliance reports** — Automated checks against tolerance bands
+- **Multi-product blending** — Optimize blends across multiple stockpiles and destinations
 
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Quality Fields** | Define quality parameters (CV, Ash, Moisture, etc.) | Quality → Fields |
-| **Blend Calculation** | Calculate blended quality from multiple sources | Quality → Blend |
-| **Monte Carlo Simulation** | Simulate quality uncertainty (100-10,000 iterations) | Quality → Simulation |
-| **Confidence Bands** | P5/P50/P95 probability ranges | Simulation results |
-| **Compliance Probability** | Likelihood of meeting specifications | Simulation results |
-| **Risk Score** | Overall quality risk assessment | Quality → Risk |
-| **Product Specifications** | Define quality targets for products | Quality → Products |
-| **Demand Schedule** | Set target and committed tonnes by period | Products → Demand |
-| **Lab Results Import** | Import delayed lab assay results | Import → Lab Results |
+### 🌏 3D Visualization and CAD
 
-#### How to Run a Quality Simulation:
+- **3D terrain viewer** — WebGL-powered surface rendering with orbit, pan, and zoom controls
+- **Block model viewer** — Voxel-based geological model display with attribute filtering and selection
+- **Surface timeline player** — Temporal playback of mining progress with comparison overlays
+- **CAD string editor** — Create, edit, split, merge, and reverse 3D polylines with vertex handles
+- **Annotation system** — 10 types: text, elevation, dimension, area, volume, bearing, coordinates, grade, station, label
+- **Print layout manager** — A0–A4 page setup with configurable scale bar, title block, north arrow
+- **Surface query tool** — Point elevation, profile extraction, cut/fill, contour, smoothing
+- **Volume calculator** — Seam reserves, cut/fill earthworks, ramp design, dump capacity calculations
+- **DXF import/export** — Industry-standard CAD file format support
+- **ASCII grid import** — Raster surface data (GeoTIFF, ASC) with CRS transformation
 
-1. Go to **Quality** → **Simulation Panel**
-2. Select sources (parcels/blocks to blend)
-3. Set iteration count:
-   - 100: Quick estimate
-   - 1,000: Standard accuracy
-   - 10,000: High precision
-4. Click **"Run Simulation"**
-5. Review results:
-   - Probability distribution charts
-   - Compliance percentage
-   - P5/P50/P95 values
+### 🚛 Fleet and Haulage
 
----
+- **Real-time fleet panel** — GPS position tracking with equipment status indicators
+- **Geofencing** — Define exclusion/inclusion zones with automatic violation alerts
+- **Haul cycle analysis** — Automatic trip detection (load → haul → dump → return) with timestamps
+- **Haulage route editor** — Multi-route comparison with cycle time, fleet sizing, cost-per-tonne
+- **Maintenance tracking** — Component life monitoring with overdue alerts and service scheduling
+- **Haulage optimization** — Dijkstra shortest-path routing with grade and rolling-resistance modeling
+- **Fleet KPI dashboard** — Utilization, availability, MTBF, and payload tracking
 
-### ⚗️ Wash Plant Management
+### 💣 Drill and Blast
 
-Configure and simulate coal washing processes.
+- **Pattern planning** — Visual drill hole grid layout with burden × spacing configuration
+- **Hole specifications** — Diameter, depth, charge weight, stemming height per individual hole
+- **Fragmentation modeling** — Kuz-Ram prediction with size distribution curves
+- **Blast cost estimation** — Explosives, drilling, and accessories cost breakdown per blast event
+- **Blast-to-mine linking** — Connect blast events to scheduling tasks and geological blocks
+- **Pattern library** — Save and reuse proven drill patterns for consistent results
 
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Wash Tables** | Define wash plant characteristics | Wash Plant → Tables |
-| **Process Simulation** | Simulate material through wash plant | Wash Plant → Process |
-| **Multi-Stage Wash** | Configure multiple washing stages | Wash Plant → Stages |
-| **Cutpoint Optimization** | Optimize specific gravity cutpoints | Wash Plant → Optimize |
-| **Yield Prediction** | Predict yield at different cutpoints | Process results |
+### 🌿 Environmental Monitoring
 
----
+- **Dust monitoring** — PM2.5 and PM10 levels with trend analysis and regulatory limit compliance
+- **Noise monitoring** — Decibel readings with time-of-day profiling and limit tracking
+- **Water quality** — pH, turbidity, suspended solids, and dissolved metals at monitoring points
+- **Rehabilitation tracking** — Area status progression (planned → active → completed) with targets
+- **Environmental dashboard** — Unified view across all environmental domains with alert priorities
+- **Compliance reports** — Automated checks against permit conditions and regulatory thresholds
 
-### 📊 Reporting & Export
+### 📊 Reporting and Export
 
-Generate reports and export data.
+- **Report pack generator** — Daily, weekly, monthly production summary reports
+- **Management KPI reports** — Executive dashboards with production-vs-plan, quality, and equipment KPIs
+- **Reconciliation panel** — Planned vs actual tonnage, grade, and strip ratio variance analysis
+- **CSV export** — Tabular data export for all datasets
+- **Email delivery** — Scheduled report distribution via SMTP
+- **Shift handover reports** — End-of-shift summary with incidents, production, and notes
 
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Query Builder** | Create ad-hoc reports without SQL | Reports → Query Builder |
-| **PDF Reports** | Export formatted PDF reports | Reports → Export PDF |
-| **Scheduled Reports** | Set up automated email reports | Reports → Schedules |
-| **Report Packs** | Generate bundled PDF reports | Reports → Pack |
-| **BI Extract** | Export data for business intelligence tools | Integration → BI Extract |
-| **CSV Export** | Download data as spreadsheets | Export → CSV |
+### 👥 Collaboration and Real-Time
 
-#### Using the Query Builder:
+- **Presence indicators** — See who is online and what they are editing
+- **Edit locking** — Prevent concurrent edits with heartbeat-based lock management
+- **Audit trail** — Complete change history for all entities with user attribution
+- **WebSocket updates** — Real-time schedule progress, fleet positions, and notifications
+- **Version immutability** — Published schedules are frozen; edits create new versions
 
-1. Go to **Reports** → **Query Builder**
-2. Select a table from the dropdown (e.g., "Load Tickets")
-3. Choose columns to display (checkbox list)
-4. Add filters:
-   - Field: Select the column
-   - Operator: equals, greater than, contains, etc.
-   - Value: Enter the filter value
-5. Add aggregations if needed (sum, average, count)
-6. Click **"Run Query"**
-7. View results and export as CSV or chart
+### 🔐 Security
 
----
-
-### 🔌 Integration Hub
-
-Connect to external systems.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **SCADA Integration** | OPC-UA tag reading, historian queries | Integration → SCADA |
-| **SAP Integration** | RFC connection for cost rates, work orders | Integration → SAP |
-| **Oracle EBS Integration** | REST API for invoices, production records | Integration → Oracle |
-| **External ID Mapping** | Map external system IDs to MineOpt entities | Integration → Mappings |
-| **BI Extract Publishing** | Schedule data exports | Integration → BI Extract |
-| **Webhook Registration** | Register webhooks for real-time events | Integration → Webhooks |
-| **Fleet Actuals Import** | Import fleet data from external systems | Integration → Fleet |
-| **Survey Data Import** | Import survey data | Integration → Survey |
-
-#### Setting Up External ID Mappings:
-
-1. Go to **Integration** → **External ID Mappings**
-2. Select entity type tab (Parcels, Resources, Locations, Products)
-3. Actions:
-   - **Add Mapping:** Click "Add Mapping" button
-   - **Import CSV:** Upload file with columns: `external_id`, `internal_id`, `description`
-   - **Export:** Download current mappings as CSV
-   - **Search:** Filter by any field
+- **JWT authentication** — Token-based auth with configurable expiry
+- **Role-based access** — Admin, Planner, Viewer, and Operator roles
+- **Password hashing** — bcrypt-based secure credential storage
+- **CORS configuration** — Configurable allowed origins for API access
+- **Health checks** — Liveness, readiness, and detailed system probes for container orchestration
 
 ---
 
-### 📁 Data Import & File Formats
+## Screenshots and UI Guide
 
-Import data from various file formats.
+MineOpt Pro features a modern, dark-themed dashboard interface designed for mine planning professionals.
+Below is a tour of the main screens and what you can accomplish in each.
 
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **File Uploader** | Drag-and-drop file upload interface | Import → Upload |
-| **Column Mapper** | Map CSV columns to database fields | During import |
-| **DXF Import** | Import CAD drawings (AutoCAD format) | Import → CAD |
-| **Surpac STR Import** | Import Surpac string files | Import → Terrain |
-| **ASCII Grid Import** | Import ASCII grid terrain files | Import → Terrain |
-| **CSV/Excel Import** | Import tabular data | Import → Data |
-| **Borehole Import** | Import drillhole collar, survey, assay data | Import → Boreholes |
-| **Block Model Import** | Import block model definitions | Import → Block Model |
-| **Lab Results Import** | Import lab assay results | Import → Lab |
+### Landing Page
 
-#### Importing Terrain Data:
+The landing page provides a high-level overview of MineOpt Pro's capabilities and quick access to
+core features. It is the first thing users see before logging in.
 
-1. Go to **Import** → **Terrain Import Panel**
-2. Choose file format:
-   - **DXF:** AutoCAD files with 3D contours
-   - **STR:** Surpac string files
-   - **ASC:** ASCII grid files
-3. Upload your file (drag-and-drop or click)
-4. Set coordinate reference system (CRS)
-5. Preview the data
-6. Click **"Import"**
+**Key elements:**
+- Hero section with animated entrance
+- Feature highlights with icon cards
+- Quick-start links to documentation
+- Login / Register call-to-action
+
+### Site Dashboard
+
+After logging in and selecting a mine site, the **Site Dashboard** is your command center.
+
+**Panels include:**
+- **Production KPIs** — total tonnes, ore tonnes, waste tonnes, strip ratio (planned vs actual)
+- **Quality Summary** — current quality parameters vs target bands
+- **Schedule Progress** — percentage complete vs plan for current period
+- **Fleet Status** — equipment availability, active trucks, and idle equipment count
+- **Alerts Panel** — critical notifications (geofence violations, quality exceedances, overdue maintenance)
+- **Quick Actions** — links to run schedulers, generate reports, view 3D viewer
+
+### Planner Workspace
+
+The **Planner Workspace** is the primary environment for mine planners. It provides:
+
+- **Gantt Chart** — drag-and-drop task scheduling with dependency arrows
+- **Resource Table** — equipment assignments with utilization indicators
+- **Flow Network Editor** — visual material routing from pit → stockpile → plant → product
+- **Precedence Graph** — directed acyclic graph of mining sequence constraints
+- **Optimizer Controls** — run CP-SAT solver, view diagnostics, compare schedule versions
+- **Period Selector** — switch between planning horizons (annual, quarterly, monthly, weekly)
+
+### 3D Viewer
+
+The **3D Viewer** renders mine geometry using Three.js with React Three Fiber:
+
+- **Terrain Surface** — triangulated irregular network (TIN) with elevation-based coloring
+- **Block Model** — semi-transparent voxels showing grade, material type, or density
+- **CAD Strings** — polylines for pit outlines, roads, dumps, and infrastructure boundaries
+- **Annotations** — floating labels, dimension lines, elevation callouts, and bearing indicators
+- **Camera Controls** — orbit, pan, zoom, preset views (top, front, side, isometric)
+- **Measurement Tools** — point-to-point distance, area of polygon, volume between surfaces
+
+### Operations Dashboard
+
+The **Operations Dashboard** provides a real-time view for shift supervisors:
+
+- **Live Fleet Map** — equipment positions on a Leaflet basemap with status icons
+- **Production Counters** — real-time tonnage counters updated via WebSocket
+- **Active Alerts** — geofence violations, fatigue events, hazard zone entries
+- **Shift Summary** — current shift production vs target with time elapsed bar
+- **Material Movement** — tonnage moved per source/destination pair this shift
+
+### Fleet Dashboard
+
+The **Fleet Dashboard** gives fleet managers comprehensive oversight:
+
+- **Equipment Cards** — availability, utilization, MTBF, and current status per machine
+- **Haul Cycle Table** — detailed trip records with load/haul/dump/return timestamps
+- **Maintenance Panel** — upcoming services, overdue items, component life remaining
+- **GPS Track Viewer** — historical path replay for any equipment over selected date range
+- **Geofence Manager** — draw and manage exclusion/inclusion zones on the map
+
+### Drill & Blast Dashboard
+
+The **Drill & Blast Dashboard** supports blast planning:
+
+- **Pattern Editor** — visual grid layout with hole spacing, burden, and offset controls
+- **Hole Detail Panel** — depth, diameter, charge weight, and stemming per hole
+- **Fragmentation Prediction** — Kuz-Ram model output with size distribution chart
+- **Cost Summary** — explosives, drilling, and accessories cost per blast calculated automatically
+- **Blast Log** — historical blast events with links to geological and scheduling data
+
+### Monitoring Dashboard
+
+The **Monitoring Dashboard** gives environmental officers a unified view:
+
+- **Dust Tab** — PM2.5 and PM10 charts with regulatory threshold lines
+- **Noise Tab** — dB(A) readings with time-of-day patterns
+- **Water Tab** — pH, turbidity, and dissolved metals at each monitoring bore
+- **Rehabilitation Tab** — progress cards showing hectares planned, active, and completed
+- **Exceedance Alerts** — automatic notifications when readings exceed permit limits
+
+### Seed Data Page
+
+The **Seed Data Page** lets new users quickly populate the system with realistic demo data.
+Click the seed button to generate:
+
+- 2 example mine sites with full geological data
+- Borehole sets, block models, and terrain surfaces
+- Equipment fleet with GPS history and maintenance records
+- Sample schedules, quality data, drill patterns, and environmental readings
+- Calendar with shifts, holidays, and weather events
+
+This is ideal for evaluation, training, and development purposes.
 
 ---
 
-### 🛠️ CAD & Geometry Tools
-
-Edit and create mine geometries.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Geometry Editor** | Modify mining area boundaries | 3D View → Edit Mode |
-| **Vertex Editing** | Drag vertices to adjust boundaries | Select polygon → Edit Vertices |
-| **Split Polygon** | Divide polygon into multiple areas | Edit → Split |
-| **Merge Polygons** | Combine adjacent polygons | Select multiple → Merge |
-| **Add Vertex** | Insert new point on edge | Click edge + Insert |
-| **Delete Vertex** | Remove selected point | Select vertex → Delete |
-| **CAD String Export** | Export to DXF format | Export → DXF |
-| **Annotation Tools** | Add text labels and notes | Annotate button |
-| **Undo/Redo** | Revert or redo changes | Ctrl+Z / Ctrl+Y |
-
----
-
-### 🔗 Real-Time Collaboration
-
-Multi-user features for team collaboration.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Presence Indicators** | See who's online and working | User avatars in header |
-| **Editing Locks** | Prevent conflicts when editing | Automatic |
-| **Change Log** | Track all modifications | View → Change Log |
-| **Real-Time Updates** | See changes from other users instantly | WebSocket-based |
-
-#### Presence Indicator Colors:
-
-- 🟢 **Green dot:** User is actively working
-- 🟡 **Yellow dot:** User is idle (no recent activity)
-- ✏️ **Pencil icon:** User is currently editing
-
----
-
-### ⚙️ Settings & Configuration
-
-Configure site and system settings.
-
-| Feature | Description | How to Access |
-|---------|-------------|---------------|
-| **Site Settings** | Configure site-specific parameters | Settings → Site |
-| **User Management** | Add/remove users, set roles | Settings → Users |
-| **Role Permissions** | Configure access permissions | Settings → Roles |
-| **Calendar Configuration** | Set up scheduling periods | Settings → Calendar |
-| **Quality Field Config** | Define quality parameters | Settings → Quality |
-| **Alert Thresholds** | Set monitoring alert levels | Settings → Alerts |
-| **CRS Configuration** | Set coordinate reference system | Settings → Spatial |
-
----
-
-## 🧭 Feature Access Guide (Menu-by-Menu, Screen-by-Screen)
-
-This section explains exactly how a user reaches each major feature and what they should see when it is working.
-
-### A. Home and Dashboard
-
-Path:
-
-1. Login
-2. Open sidebar
-3. Click `Dashboard`
-
-Expected visuals:
-
-- KPI/summary cards at top
-- active context panels (site/schedule context)
-- navigation still visible on left
-
-If something is wrong:
-
-- blank cards: run seed data first
-- redirect to login: token/auth session expired
-
-### B. Planner entry point
-
-Path:
-
-1. Sidebar → `3D Spatial View` (or any planning tab shortcut)
-2. URL should become `/app/planner?tab=...`
-
-Expected visuals:
-
-- planner header region
-- tab-specific module content area
-- no hard browser error overlay
-
-### C. Planner tab-by-tab guide
-
-#### C1. Spatial View
-
-Access:
-
-- Sidebar → Planning → `3D Spatial View`
-- URL: `/app/planner?tab=spatial`
-
-Expected visuals:
-
-- spatial panel/canvas area
-- spatial controls/toolbar blocks
-- selectable planning artifacts (depending on seed/import state)
-
-#### C2. Gantt Schedule
-
-Access:
-
-- Sidebar → Planning → `Gantt Schedule`
-- URL: `/app/planner?tab=gantt`
-
-Expected visuals:
-
-- timeline-style scheduling view
-- rows/blocks area for tasks
-- schedule-related controls
-
-#### C3. Schedule Control
-
-Access:
-
-- Sidebar → Planning → `Schedule Control`
-- URL: `/app/planner?tab=schedule-control`
-
-Expected visuals:
-
-- controls for schedule operations
-- status/diagnostic feedback area
-- run/fork/switch style control actions
-
-#### C4. Reports & Analytics
-
-Access:
-
-- Sidebar → Planning → `Reports & Analytics`
-- URL: `/app/planner?tab=reporting`
-
-Expected visuals:
-
-- report widgets/tables/charts or report controls
-- export/report interaction options where available
-
-#### C5. Flow Network
-
-Access:
-
-- Sidebar → Configuration → `Flow Network`
-- URL: `/app/planner?tab=flow-editor`
-
-Expected visuals:
-
-- flow network editor area
-- node/arc configuration controls
-
-#### C6. Product Specs
-
-Access:
-
-- Sidebar → Configuration → `Product Specs`
-- URL: `/app/planner?tab=product-specs`
-
-Expected visuals:
-
-- quality/product specification controls
-- save/update interaction controls
-
-#### C7. Resources
-
-Access:
-
-- Sidebar → Configuration → `Resources`
-- URL: `/app/planner?tab=resources`
-
-Expected visuals:
-
-- resource list/config panel
-- editable fields for resource-level parameters
-
-#### C8. Block Model
-
-Access:
-
-- Sidebar → Configuration → `Block Model`
-- URL: `/app/planner?tab=geology`
-
-Expected visuals:
-
-- geology/block model module content
-- entity/layer selection controls
-
-#### C9. Stockpiles
-
-Access:
-
-- Sidebar → Configuration → `Stockpiles`
-- URL: `/app/planner?tab=data`
-
-Expected visuals:
-
-- stockpile-related tables/panels
-- data summaries for current state
-
-#### C10. Import Data
-
-Access:
-
-- Sidebar → Data & Integration → `Import Data`
-- URL: `/app/planner?tab=import`
-
-Expected visuals:
-
-- file upload controls
-- file parsing or mapping interfaces
-
-#### C11. Integrations
-
-Access:
-
-- Sidebar → Data & Integration → `Integrations`
-- URL: `/app/planner?tab=integrations`
-
-Expected visuals:
-
-- external mapping/integration configuration panels
-- import/export mapping actions
-
-#### C12. Settings
-
-Access:
-
-- Sidebar → Data & Integration → `Settings`
-- URL: `/app/planner?tab=settings`
-
-Expected visuals:
-
-- configuration forms for settings domains
-- persistent save actions and feedback toasts/messages
-
-### D. Operations modules guide
-
-#### D1. Fleet Management
-
-Access:
-
-- Sidebar → Operations → `Fleet Management`
-- URL: `/app/fleet`
-
-Expected visuals:
-
-- fleet dashboard cards/charts/maps
-- equipment/cycle context panels
-
-#### D2. Drill & Blast
-
-Access:
-
-- Sidebar → Operations → `Drill & Blast`
-- URL: `/app/drill-blast`
-
-Expected visuals:
-
-- blast pattern/event module UI
-- related action controls
-
-#### D3. Shift Operations
-
-Access:
-
-- Sidebar → Operations → `Shift Operations`
-- URL: `/app/operations`
-
-Expected visuals:
-
-- shift handover/operations forms and logs
-- shift context selectors or summary panels
-
-### E. Monitoring modules guide
-
-#### E1. Slope Stability
-
-Access:
-
-- Sidebar → Monitoring → `Slope Stability`
-- URL base: `/app/monitoring`
-
-Expected visuals:
-
-- monitoring panels for geotechnical context
-- alert/readings view blocks
-
-#### E2. Environment
-
-Access:
-
-- Sidebar → Monitoring → `Environment`
-- URL base: `/app/monitoring`
-
-Expected visuals:
-
-- environmental monitoring panels
-- dust/condition tracking context
-
-### F. Seed Data workflow guide
-
-Access:
-
-- Sidebar → Data & Integration → `Seed Demo Data`
-- URL: `/app/seed-data`
-
-Expected visuals:
-
-- clearly labeled seed action controls
-- success/failure status messaging
-- post-seed planner pages populate with data
-
----
-
-## 🔧 Setup Options
-
-MineOpt Pro can be set up in three different ways depending on your needs:
-
-### Option 1: Development Setup (Recommended for Beginners)
-
-This is the simplest setup, great for learning and development.
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate          # Windows
-source venv/bin/activate       # Mac/Linux
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+## Architecture Overview
+
+MineOpt Pro follows a **three-tier architecture** with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Frontend (React 19)                   │
+│  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌─────────────┐ │
+│  │  Pages   │ │Components│ │ Context  │ │   Hooks     │ │
+│  │  (10)    │ │  (41     │ │ (Site,   │ │ (API calls, │ │
+│  │         │ │ folders) │ │  Auth,   │ │  WebSocket) │ │
+│  │         │ │          │ │  Theme)  │ │             │ │
+│  └─────────┘ └──────────┘ └──────────┘ └─────────────┘ │
+│  Vite Dev Server (:5173)  ─── Build → Nginx (:3000)    │
+└────────────────────────┬────────────────────────────────┘
+                         │ HTTP / WebSocket
+┌────────────────────────▼────────────────────────────────┐
+│                  Backend (FastAPI)                       │
+│  ┌──────────┐ ┌───────────┐ ┌─────────────────────────┐│
+│  │ Routers  │ │ Services  │ │    Domain Models        ││
+│  │  (40     │ │  (60+     │ │  (21 model files,       ││
+│  │ files)   │ │  files)   │ │   SQLAlchemy ORM)       ││
+│  └──────────┘ └───────────┘ └─────────────────────────┘│
+│  ┌──────────┐ ┌───────────┐ ┌─────────────────────────┐│
+│  │ Solvers  │ │   Auth    │ │    WebSocket Hub        ││
+│  │ (CP-SAT, │ │  (JWT,    │ │  (presence, progress,   ││
+│  │  LP)     │ │  bcrypt)  │ │   fleet updates)        ││
+│  └──────────┘ └───────────┘ └─────────────────────────┘│
+│  Uvicorn (:8000)                                        │
+└────────────────────────┬────────────────────────────────┘
+                         │ SQLAlchemy ORM
+┌────────────────────────▼────────────────────────────────┐
+│                   Database Layer                         │
+│  ┌──────────────────────┐  ┌──────────────────────────┐ │
+│  │   PostgreSQL 15      │  │   SQLite (dev/test)      │ │
+│  │   (production)       │  │   (zero-config local)    │ │
+│  └──────────────────────┘  └──────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**Terminal 2 - Frontend:**
+### Design Principles
+
+1. **Separation of Concerns** — Routers handle HTTP, services contain business logic, domain models define data
+2. **Convention over Configuration** — Consistent file naming, standard CRUD patterns across all modules
+3. **Progressive Enhancement** — Works with SQLite for development, scales to PostgreSQL for production
+4. **Offline-First Components** — Frontend renders meaningfully with demo data, no backend required for UI dev
+5. **Theme Compatibility** — All components use CSS custom properties (`var(--color-*)`) for light/dark mode
+
+### Request Flow
+
+```
+User Action → React Component → API Hook → Axios Request
+    → FastAPI Router → Service Layer → SQLAlchemy ORM → Database
+    → Response → JSON → React State Update → UI Re-render
+```
+
+### WebSocket Flow
+
+```
+Frontend connects → /ws/{client_id}
+Server broadcasts: schedule_progress, fleet_position, presence_update, notification
+Frontend dispatches to appropriate context/reducer
+```
+
+---
+
+## Technology Stack
+
+### Backend
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Python** | 3.10+ | Core language |
+| **FastAPI** | 0.100+ | REST API framework with automatic OpenAPI docs |
+| **Uvicorn** | 0.20+ | ASGI server with WebSocket support |
+| **SQLAlchemy** | 2.0+ | ORM with relationship mapping and migrations |
+| **PostgreSQL** | 15 | Production database |
+| **SQLite** | 3 | Development/testing database (zero-config) |
+| **Google OR-Tools** | — | CP-SAT constraint programming solver |
+| **NumPy** | 1.21+ | Numerical computation (kriging, optimization) |
+| **Pandas** | 1.3+ | Data manipulation for reports and CSV export |
+| **SimPy** | 4.0+ | Discrete event simulation for quality Monte Carlo |
+| **DEAP** | 1.3+ | Evolutionary algorithms for multi-objective optimization |
+| **Shapely** | 2.0+ | Geometric operations (polygons, intersections, buffering) |
+| **PyProj** | 3.4+ | Coordinate reference system transformations |
+| **Rasterio** | 1.3+ | GeoTIFF and raster DEM reading |
+| **Faker** | 8.0+ | Realistic demo data generation |
+| **PyJWT** | — | JSON Web Token authentication |
+| **bcrypt** | — | Password hashing |
+
+### Frontend
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **React** | 19 | UI component framework |
+| **Vite** | 6+ | Build tool and dev server with HMR |
+| **React Router** | 7 | Client-side routing |
+| **Axios** | 1.13+ | HTTP client with interceptors |
+| **Three.js** | 0.182 | 3D rendering engine |
+| **React Three Fiber** | 9.5 | React bindings for Three.js |
+| **React Three Drei** | 10.7 | Three.js helpers (controls, text, loaders) |
+| **Recharts** | 3.6 | Charting library for KPI dashboards |
+| **Leaflet** | 1.9 | 2D map rendering for fleet tracking |
+| **React Leaflet** | 5.0 | React bindings for Leaflet |
+| **Lucide React** | 0.562 | Icon library (mine-themed iconography) |
+| **Tailwind CSS** | 4.1 | Utility-first CSS framework |
+
+### Infrastructure
+
+| Technology | Purpose |
+|-----------|---------|
+| **Docker** | Containerization for all services |
+| **Docker Compose** | Multi-service orchestration |
+| **Nginx** | Frontend static file serving and reverse proxy |
+| **Redis** | Session caching and pub/sub (optional) |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+| Requirement | Minimum Version | Check Command |
+|------------|-----------------|---------------|
+| Python | 3.10 | `python --version` |
+| Node.js | 18 | `node --version` |
+| npm | 9 | `npm --version` |
+| Git | 2.30 | `git --version` |
+| Docker *(optional)* | 20 | `docker --version` |
+
+### Quick Start (5 Minutes)
+
+For the impatient — get MineOpt Pro running in 5 steps:
+
 ```bash
+# 1. Clone the repository
+git clone https://github.com/SIHLE-MTSHALI/MineOpt-pro.git
+cd MineOpt-pro
+
+# 2. Set up the backend
+cd backend
+python -m venv venv
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+
+# 3. Start the backend
+uvicorn app.main:app --reload --port 8000
+
+# 4. In a new terminal, set up and start the frontend
 cd frontend
 npm install
 npm run dev
+
+# 5. Open your browser to http://localhost:5173
 ```
 
-**Access Points:**
-| Service | URL |
-|---------|-----|
-| Frontend App | http://localhost:5173 |
-| Backend API | http://localhost:8000 |
-| API Documentation (Swagger) | http://localhost:8000/docs |
-| Alternative API Docs (ReDoc) | http://localhost:8000/redoc |
+**First things to do after launch:**
+
+1. **Register a new account** on the login page
+2. **Visit the Seed Data page** to populate with demo data
+3. **Select a site** from the site selector dropdown
+4. **Explore the dashboard** — try the Planner Workspace, 3D Viewer, and Fleet Dashboard
 
 ---
 
-### Option 2: Docker Setup (Recommended for Consistent Environments)
+## Installation Guide
 
-Use Docker to run everything in containers. This ensures the same environment everywhere.
+### Detailed Backend Setup
 
-**Prerequisites:**
-- Docker Desktop installed ([download here](https://www.docker.com/products/docker-desktop))
-
-**Quick Start:**
 ```bash
-# From the project root directory
-docker-compose up --build
-```
+# Clone the repository
+git clone https://github.com/SIHLE-MTSHALI/MineOpt-pro.git
+cd MineOpt-pro
 
-**What happens:**
-1. PostgreSQL database container starts
-2. Backend API container builds and starts
-3. Frontend container builds and starts
-4. All services are networked together
-
-**Access Points:**
-| Service | URL |
-|---------|-----|
-| Frontend App | http://localhost:3000 |
-| Backend API | http://localhost:8000 |
-| PostgreSQL Database | localhost:5432 |
-
-**Other Docker Commands:**
-```bash
-# Run in background
-docker-compose up -d
-
-# Stop all containers
-docker-compose down
-
-# View logs
-docker-compose logs -f
-
-# Rebuild after changes
-docker-compose up --build
-
-# Remove all data and start fresh
-docker-compose down -v
-docker-compose up --build
-```
-
----
-
-### Option 3: Production Deployment
-
-For deploying to a production server.
-
-**Backend (using Gunicorn):**
-```bash
+# Create and activate a Python virtual environment
 cd backend
-pip install gunicorn
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
-```
-
-**Frontend (build static files):**
-```bash
-cd frontend
-npm run build
-# The 'dist' folder contains static files
-# Serve with nginx, Apache, or any static file server
-```
-
-**Example Nginx Configuration:**
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # Frontend
-    location / {
-        root /var/www/mineopt/dist;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Backend API proxy
-    location /api {
-        proxy_pass http://localhost:8000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
----
-
-## ⚙️ Environment Configuration
-
-### Creating Your .env File
-
-Copy the example file and customize:
-
-```bash
-# In the project root directory
-cp .env.example .env
-```
-
-**Edit `.env` with your settings:**
-
-```bash
-# Database Configuration
-POSTGRES_USER=mineopt
-POSTGRES_PASSWORD=your-secure-password-here
-POSTGRES_DB=mineopt_pro
-
-# Backend Configuration
-SECRET_KEY=your-super-secret-jwt-key-here-change-this
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
-
-# Optional: Email Configuration (for report delivery)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=noreply@yourcompany.com
-
-# Optional: Redis (for caching and sessions)
-REDIS_URL=redis://redis:6379/0
-```
-
-### Database Options
-
-**SQLite (Default - Development):**
-- No configuration needed
-- Database file: `backend/mineopt.db`
-- Created automatically on first run
-
-**PostgreSQL (Recommended for Production):**
-
-1. Install PostgreSQL
-2. Create a database:
-   ```bash
-   createdb mineopt_pro
-   ```
-3. Update `.env`:
-   ```bash
-   DATABASE_URL=postgresql://username:password@localhost/mineopt_pro
-   ```
-4. Restart the backend
-
----
-
-## 📖 Detailed Usage Guide
-
-### Daily Workflow Example
-
-Here's a typical day using MineOpt Pro:
-
-#### Morning Shift Start (6:00 AM)
-
-1. **Check Dashboard**
-   - Review overnight alerts and notifications
-   - Check equipment status
-   - Review today's planned production
-
-2. **Complete Shift Handover**
-   - Go to **Operations** → **Handover**
-   - Review outgoing shift notes
-   - Acknowledge handover items
-   - Add incoming shift notes
-
-3. **Verify Equipment Status**
-   - Go to **Fleet** → **Map View**
-   - Confirm all equipment is accounted for
-   - Check for any maintenance alerts
-
-#### During Shift
-
-4. **Record Load Tickets**
-   - Use **Operations** → **Load Tickets**
-   - Record each truck load as it moves
-
-5. **Monitor Slopes (if applicable)**
-   - Check **Monitoring** → **Slopes** after blasting
-   - Log any unusual readings
-
-6. **Run Schedule Updates**
-   - If delays occur, update the schedule
-   - Run **Fast Pass** to re-optimize
-
-#### Shift End
-
-7. **Generate Reports**
-   - Run **Reports** → **Daily Production**
-   - Export shift summary
-
-8. **Complete Handover**
-   - Document key events
-   - Note any outstanding tasks
-   - Submit handover form
-
----
-
-### Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl + Z` | Undo last action |
-| `Ctrl + Y` | Redo |
-| `Ctrl + Shift + Z` | Redo (alternative) |
-| `Ctrl + S` | Save current changes |
-| `Escape` | Cancel current operation |
-| `Delete` | Remove selected item |
-| `F` | Fit view to all objects (3D view) |
-| `G` | Toggle grid (3D view) |
-| `M` | Measurement mode (3D view) |
-
----
-
-## 📡 API Reference
-
-MineOpt Pro provides a comprehensive REST API. Full interactive documentation is available at `http://localhost:8000/docs` when the server is running.
-
-### Authentication
-
-All API endpoints (except login) require authentication:
-
-**Login:**
-```http
-POST /auth/token
-Content-Type: application/x-www-form-urlencoded
-
-username=admin@example.com&password=yourpassword
-```
-
-**Response:**
-```json
-{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "token_type": "bearer",
-  "session_id": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-**Using the Token:**
-```http
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
-```
-
-### Key API Endpoints
-
-#### Health Check
-```http
-GET /
-Response: {"status": "MineOpt Pro Server Running", "version": "2.0.0"}
-```
-
-#### Sites
-```http
-GET /sites                     # List all sites
-GET /sites/{site_id}          # Get site details
-POST /sites                    # Create new site
-```
-
-#### Scheduling
-```http
-GET /schedules/site/{site_id}  # List schedules for site
-POST /schedules                # Create new schedule
-GET /schedules/{id}            # Get schedule details
-POST /schedules/{id}/run       # Run optimization (type: "fast" or "full")
-PUT /schedules/{id}/publish    # Publish draft schedule
-GET /schedules/{id}/tasks      # Get scheduled tasks
-```
-
-#### Fleet Management
-```http
-GET /fleet/equipment                           # List all equipment
-GET /fleet/equipment/{id}                      # Get equipment details
-POST /fleet/equipment/{id}/gps                 # Record GPS reading
-GET /fleet/equipment/{id}/haul-cycle-kpis     # Get haul cycle metrics
-GET /fleet/geofences                          # List geofences
-POST /fleet/geofences                         # Create geofence
-GET /fleet/maintenance                        # List maintenance records
-```
-
-#### Drill & Blast
-```http
-POST /drill-blast/patterns                     # Create blast pattern
-GET /drill-blast/patterns/{id}                # Get pattern details
-POST /drill-blast/patterns/{id}/holes         # Add drill hole
-GET /drill-blast/patterns/{id}/fragmentation  # Predict fragmentation
-```
-
-#### Quality
-```http
-POST /quality/blend                           # Calculate blended quality
-POST /quality/simulate                        # Run Monte Carlo simulation
-GET /quality/fields/site/{site_id}           # Get quality field config
-POST /quality/check-constraints               # Check spec compliance
-```
-
-#### Operations
-```http
-POST /operations/tickets                      # Create load ticket
-GET /operations/sites/{site_id}/current-shift # Get current shift
-POST /operations/handover                     # Submit shift handover
-```
-
-#### Monitoring
-```http
-POST /monitoring/prisms/readings              # Record prism reading
-GET /monitoring/sites/{site_id}/slope-alerts  # Get slope alerts
-GET /monitoring/sites/{site_id}/dust          # Get dust readings
-```
-
-#### Surfaces
-```http
-GET /surfaces/{surface_id}/history           # List surface versions
-POST /surfaces/compare                        # Compare two surfaces
-GET /surfaces/sites/{site_id}/progress       # Get excavation progress
-```
-
-#### Reports
-```http
-GET /reports/schedule/{id}/pdf               # Export PDF report
-GET /reports/schedule/{id}/bi                # Export BI data
-POST /reports/schedules                      # Create report schedule
-```
-
-### WebSocket Endpoints
-
-Real-time collaboration uses WebSockets:
-
-```javascript
-// Connect to real-time updates
-const ws = new WebSocket('ws://localhost:8000/ws/connect?site_id=SITE_ID&user_id=USER_ID');
-
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  // Handle: presence_update, entity_changed, editing_lock
-};
-```
-
----
-
-## ⚠️ Current Limitations & Known Gaps (February 2026)
-
-This section is intentionally direct. It describes where the product is still maturing so users and contributors can plan safely.
-
-### Capability Maturity Matrix
-
-Legend:
-
-- `✅ Available` = usable now in normal workflows
-- `🟡 Partial` = available with constraints or incomplete UX
-- `🔜 Planned` = designed/targeted but not fully delivered in active workflow
-
-| Domain | Maturity | Notes |
-|------|------|------|
-| Core authentication and protected routing | ✅ Available | Login/register and protected routes are active in app shell. |
-| Dashboard and planner shell navigation | ✅ Available | Main pages and planner tabs are reachable via menu and URL. |
-| Schedule and scenario interaction | 🟡 Partial | Core workflows exist; ongoing hardening for enterprise-grade determinism and diagnostics depth. |
-| Quality and stockpile workflows | 🟡 Partial | Core modules are available; complete operational confidence workflows continue to mature. |
-| Flow network configuration | 🟡 Partial | Editable and usable; validation depth and advanced UX still improving. |
-| Raster + terrain operations | 🟡 Partial | Strong API foundation; runtime driver support and upload UX vary by environment. |
-| CRS transformation and multi-coordinate support | ✅ Available | CRS service is broad and practical for mine workflows. |
-| ECW handling | 🟡 Partial | Works where runtime drivers support it; GeoTIFF fallback recommended for universal behavior. |
-| DXF/STR/CSV/TXT/ASCII file workflows | ✅ Available | Parse/import/export paths exist; end-user pipeline UX continues to be refined. |
-| Surface/CAD string/annotation tooling | 🟡 Partial | API coverage is substantial; some interactive tool chains remain integration-heavy. |
-| Fleet/drill-blast/operations/monitoring dashboards | ✅ Available | Dedicated modules are present and accessible. |
-| Publishing/report-pack enterprise pipeline | 🟡 Partial | Reporting exists; full commercial governance and publishing rigor is still in progress. |
-| Multi-user conflict controls/audit depth | 🟡 Partial | Present foundations with ongoing enterprise hardening work. |
-
-### What this means for end-users today
-
-1. You can run and evaluate meaningful planning workflows locally.
-2. You can test import, schedule, and module navigation end-to-end.
-3. You should still treat this as an evolving product platform rather than a fully hardened commercial release.
-
-### Known technical constraints to be aware of
-
-1. Raster file operations can depend on server file accessibility and installed raster drivers.
-2. ECW behavior is environment-dependent and may need conversion workflows.
-3. Some advanced UX pathways are still converging from module-first to workflow-first behavior.
-4. Large frontend bundles in some builds can impact first-load performance.
-5. Some workflows still require clearer operator-guided validations and guardrails.
-
-### No-cost policy impact
-
-This project is built to avoid mandatory paid runtime dependencies.
-
-Possible cost triggers (optional, environment-driven):
-
-1. Commercial ECW/GDAL codec/licensing in certain enterprise deployments.
-2. Enterprise hosting/monitoring/email providers for production scale.
-3. Proprietary external system access (if your organization requires paid integration endpoints).
-
-If your goal is strict no-cost operation, use open-source-compatible formats and local services by default.
-
----
-
-## 🛣️ Future Work Roadmap to Commercial Readiness
-
-This roadmap aligns with the project recovery plans and issue execution waves.
-
-### Phase 1: Reliability and baseline health
-
-Target outcomes:
-
-1. Stable automated test baseline across backend and frontend.
-2. Strong lint/build gates in CI.
-3. Elimination of unstable contract drift in active user workflows.
-
-Key work:
-
-- backend import path cleanup and test contract alignment
-- frontend test runner and config standardization
-- lint baseline hardening and quality gate enforcement
-
-### Phase 2: API and workflow consistency
-
-Target outcomes:
-
-1. Single API access strategy for frontend modules.
-2. Uniform endpoint usage patterns.
-3. Reduced environment-specific behavior differences.
-
-Key work:
-
-- centralize all active API calls through service layer
-- remove fragmented hardcoded endpoint usage
-- strengthen endpoint compatibility checks
-
-### Phase 3: Geospatial and coordinate pipeline hardening
-
-Target outcomes:
-
-1. Upload-first raster workflows with robust validations.
-2. Clear runtime capability checks for ECW and other raster formats.
-3. Seamless CRS handling in import and spatial flows.
-
-Key work:
-
-- raster ingestion workflow hardening
-- CRS metadata visibility and transformation controls
-- explicit fallback workflows for unsupported drivers
-
-### Phase 4: Site-builder and import UX maturity
-
-Target outcomes:
-
-1. Unified, intuitive import-to-site workflow.
-2. Strong validation and recoverable error handling.
-3. Cleaner route-level discoverability of file workflows.
-
-Key work:
-
-- consolidate duplicate wizard paths where relevant
-- guided upload → map → validate → build pipeline
-- improve malformed file diagnostics and recovery UX
-
-### Phase 5: Surface/CAD/annotation integrated workspace
-
-Target outcomes:
-
-1. Single integrated spatial tool experience.
-2. Shared selection and editing model.
-3. Better operational feedback for geometry operations.
-
-Key work:
-
-- integrate surface tools, CAD strings, and annotations into unified workspace behavior
-- add operation history, undo/redo and clearer result overlays
-- strengthen spatial query/edit cycles for production users
-
-### Phase 6: Scheduling and optimization authority
-
-Target outcomes:
-
-1. Deterministic schedule runs for same inputs.
-2. Strong explanation artifacts for decisions.
-3. Improved operational trust in full-pass outputs.
-
-Key work:
-
-- harden objective profile execution and constraint accounting
-- improve diagnostics and binding-constraint transparency
-- deepen scenario comparison outputs
-
-### Phase 7: Reporting, publishing, and governance
-
-Target outcomes:
-
-1. Reliable report-pack generation.
-2. Version-linked publishing with strong traceability.
-3. Enterprise-friendly operational exports.
-
-Key work:
-
-- standard report templates and export consistency
-- immutable schedule version linkage across artifacts
-- outbound integration hardening for dispatch/BI flows
-
-### Phase 8: Collaboration and enterprise controls
-
-Target outcomes:
-
-1. Safer multi-user editing behavior.
-2. Stronger permissions and audit consistency.
-3. Better operator awareness of concurrent changes.
-
-Key work:
-
-- enforce role checks across critical endpoints
-- improve change tracking and collaboration visibility
-- strengthen edit conflict handling
-
-### Phase 9: Realistic synthetic data and regression scenarios
-
-Target outcomes:
-
-1. Repeatable realistic scenario datasets.
-2. Better workflow regression confidence.
-3. More reliable demo/test environments.
-
-Key work:
-
-- deterministic synthetic generation controls
-- region-aligned realistic scenario packs
-- import-to-report regression suite coverage
-
-### Phase 10: Commercial release readiness
-
-Target outcomes:
-
-1. Release checklist with pass/fail gates.
-2. Performance and reliability budgets.
-3. Documented UAT for planner/supervisor/admin personas.
-
-Key work:
-
-- enforce release governance checklist
-- performance monitoring and runtime thresholds
-- end-to-end UAT evidence capture
-
----
-
-## 🐛 Troubleshooting
-
-### Backend Issues
-
-#### "Module not found" Error
-
-```bash
-# Make sure virtual environment is activated
-venv\Scripts\activate          # Windows
-source venv/bin/activate       # Mac/Linux
-
-# Reinstall all dependencies
+python -m venv venv
+
+# Activate the virtual environment
+# On Windows (PowerShell):
+venv\Scripts\Activate.ps1
+# On Windows (cmd):
+venv\Scripts\activate.bat
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install Python dependencies
 pip install -r requirements.txt
 ```
 
-#### "Port 8000 already in use"
+#### What Gets Installed
+
+The `requirements.txt` installs the following packages:
+
+| Package | Purpose |
+|---------|---------|
+| `fastapi` | Web framework with automatic API documentation |
+| `uvicorn` | ASGI server for running FastAPI |
+| `websockets` | WebSocket support for real-time features |
+| `numpy`, `pandas` | Numerical computation and data manipulation |
+| `faker` | Realistic demo data generation for seeding |
+| `simpy` | Discrete event simulation engine |
+| `deap` | Evolutionary/genetic algorithm framework |
+| `pyproj` | Coordinate reference system transformation |
+| `shapely` | 2D geometric operations |
+| `rasterio` | Raster data (GeoTIFF, DEM) reading |
+
+### Detailed Frontend Setup
 
 ```bash
-# Option 1: Use a different port
-uvicorn app.main:app --reload --port 8001
+# Navigate to frontend directory
+cd frontend
 
-# Option 2: Kill the process using port 8000
+# Install Node.js dependencies
+npm install
+
+# Verify installation
+npm run build
+```
+
+#### What Gets Installed
+
+| Package | Purpose |
+|---------|---------|
+| `react`, `react-dom` | UI component framework |
+| `react-router-dom` | Client-side routing |
+| `axios` | HTTP client for API communication |
+| `three`, `@react-three/fiber`, `@react-three/drei` | 3D rendering |
+| `recharts` | Charting and data visualization |
+| `leaflet`, `react-leaflet` | 2D map rendering |
+| `lucide-react` | SVG icon library |
+| `tailwindcss` | Utility-first CSS framework |
+
+### Verifying Your Installation
+
+After installing both backend and frontend, verify everything works:
+
+```bash
+# Terminal 1: Start backend
+cd backend
+uvicorn app.main:app --reload --port 8000
+# You should see: "Uvicorn running on http://0.0.0.0:8000"
+
+# Terminal 2: Start frontend
+cd frontend
+npm run dev
+# You should see: "Local: http://localhost:5173/"
+
+# Terminal 3: Verify API
+curl http://localhost:8000/
+# Should return: {"message": "MineOpt Pro API is running"}
+
+# Verify API docs
+# Open browser to: http://localhost:8000/docs
+# You should see the Swagger UI with all 40+ API endpoints
+```
+
+---
+
+## Configuration Reference
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `POSTGRES_USER` | `mineopt` | PostgreSQL username |
+| `POSTGRES_PASSWORD` | *(required)* | PostgreSQL password |
+| `POSTGRES_DB` | `mineopt_pro` | Database name |
+| `SECRET_KEY` | *(required)* | JWT signing key — use a long random string |
+| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed frontend origins |
+| `SMTP_HOST` | *(optional)* | SMTP server for email report delivery |
+| `SMTP_PORT` | `587` | SMTP port (587 for TLS, 465 for SSL) |
+| `SMTP_USER` | *(optional)* | SMTP authentication username |
+| `SMTP_PASSWORD` | *(optional)* | SMTP authentication password |
+| `SMTP_FROM` | `noreply@mineopt.com` | Sender email address |
+| `REDIS_URL` | *(optional)* | Redis connection string for caching |
+
+### Generating a Secure Secret Key
+
+```bash
+# Python method
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+
+# OpenSSL method
+openssl rand -base64 48
+```
+
+### Database Configuration
+
+**Development (SQLite — no configuration needed):**
+
+By default, MineOpt Pro uses SQLite with a database file at `backend/mineopt_pro.db`.
+This requires zero configuration and is ideal for development and testing.
+
+**Production (PostgreSQL):**
+
+Set the `DATABASE_URL` environment variable:
+
+```bash
+DATABASE_URL=postgresql://mineopt:your-password@localhost:5432/mineopt_pro
+```
+
+The database schema is created automatically on first startup via SQLAlchemy's `create_all()`.
+For production, Alembic migrations are supported if configured.
+
+### Frontend Configuration
+
+The frontend connects to the backend via the `VITE_API_URL` environment variable:
+
+```bash
+# In frontend/.env (create if it doesn't exist)
+VITE_API_URL=http://localhost:8000
+```
+
+If not set, the frontend defaults to `http://localhost:8000`.
+
+---
+
+## Running the Application
+
+### Development Mode
+
+Development mode provides hot-reloading for both backend and frontend:
+
+```bash
+# Terminal 1: Backend with auto-reload
+cd backend
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+uvicorn app.main:app --reload --port 8000 --log-level info
+
+# Terminal 2: Frontend with HMR (Hot Module Replacement)
+cd frontend
+npm run dev
+```
+
+**Backend runs on:** `http://localhost:8000`
+**Frontend runs on:** `http://localhost:5173`
+**API documentation:** `http://localhost:8000/docs` (Swagger UI)
+**Alternative API docs:** `http://localhost:8000/redoc` (ReDoc)
+
+### Production Mode
+
+```bash
+# Build the frontend for production
+cd frontend
+npm run build
+
+# Run backend in production mode
+cd backend
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+The production frontend build outputs to `frontend/dist/` and should be served
+by a reverse proxy (e.g., Nginx) or a static file server.
+
+---
+
+## Docker Deployment
+
+### Using Docker Compose
+
+The easiest way to deploy MineOpt Pro is with Docker Compose, which starts all three services
+(PostgreSQL, Backend, Frontend) with a single command:
+
+```bash
+# 1. Configure environment
+cp .env.example .env
+# Edit .env with your settings (especially POSTGRES_PASSWORD and SECRET_KEY)
+
+# 2. Build and start all services
+docker-compose up -d --build
+
+# 3. Check service health
+docker-compose ps
+
+# 4. View logs
+docker-compose logs -f backend
+```
+
+### Service Ports
+
+| Service | Port | URL |
+|---------|------|-----|
+| PostgreSQL | 5432 | `postgresql://mineopt:password@localhost:5432/mineopt_pro` |
+| Backend API | 8000 | `http://localhost:8000` |
+| Frontend | 3000 | `http://localhost:3000` |
+
+### Health Checks
+
+The backend provides health check endpoints for container orchestration:
+
+| Endpoint | Purpose | Response |
+|----------|---------|----------|
+| `GET /health/live` | Liveness probe | `{"status": "alive"}` |
+| `GET /health/ready` | Readiness probe | `{"status": "ready", "database": "connected"}` |
+| `GET /health/detailed` | Full system check | CPU, memory, disk, database, all services |
+
+### Stopping and Cleanup
+
+```bash
+# Stop all services
+docker-compose down
+
+# Stop and remove all data (including database)
+docker-compose down -v
+
+# Rebuild after code changes
+docker-compose up -d --build
+```
+
+---
+
+## Project Structure
+
+```
+MineOpt-pro/
+├── .env.example              # Environment variable template
+├── .gitignore                # Git ignore patterns
+├── docker-compose.yml        # Multi-service Docker orchestration
+├── requirements.txt          # Root-level Python dependencies
+│
+├── backend/                  # FastAPI backend application
+│   ├── requirements.txt      # Python dependencies
+│   ├── Dockerfile            # Backend container definition
+│   └── app/
+│       ├── main.py           # FastAPI app entry point, middleware, router registration
+│       ├── database.py       # SQLAlchemy engine and session configuration
+│       ├── domain/           # SQLAlchemy ORM models (21 files)
+│       │   ├── models_core.py           # User, Role, Site
+│       │   ├── models_calendar.py       # Calendar, Period
+│       │   ├── models_resource.py       # MaterialType, Activity, Resource
+│       │   ├── models_scheduling.py     # ScheduleVersion, Task
+│       │   ├── models_flow.py           # FlowNetwork, FlowNode, FlowArc
+│       │   ├── models_fleet.py          # Equipment, GPSReading, HaulCycle
+│       │   ├── models_drill_blast.py    # BlastPattern, DrillHole, BlastEvent
+│       │   ├── models_borehole.py       # Borehole, BoreholeInterval
+│       │   ├── models_block_model.py    # BlockModel, Block
+│       │   ├── models_surface.py        # Surface, SurfacePoint
+│       │   ├── models_surface_history.py # SurfaceVersion, SurfaceComparison
+│       │   ├── models_wash_table.py     # WashTable, WashTableEntry
+│       │   ├── models_demand.py         # Product, Customer, DemandForecast
+│       │   ├── models_geotech_safety.py # GeotechDomain, HazardZone, FatigueEvent
+│       │   ├── models_material_shift.py # LoadTicket, Shift, ShiftHandover
+│       │   ├── models_planning_horizon.py # PlanningHorizon, HorizonTarget
+│       │   ├── models_precedence.py     # PrecedenceConstraint
+│       │   ├── models_parcel.py         # MaterialParcel
+│       │   ├── models_staged_stockpile.py # StagedStockpile
+│       │   └── models_schedule_results.py # ScheduleResult
+│       ├── routers/          # API endpoint definitions (40 files)
+│       │   ├── auth_router.py           # Authentication (login, register, token)
+│       │   ├── config_router.py         # Site configuration CRUD
+│       │   ├── schedule_router.py       # Schedule versions and solver execution
+│       │   ├── optimization_router.py   # CP-SAT and LP optimization runs
+│       │   ├── quality_router.py        # Quality data and compliance
+│       │   ├── fleet_router.py          # Equipment and GPS tracking
+│       │   ├── geology_router.py        # Geological data (boreholes, seams)
+│       │   ├── surface_router.py        # Terrain surfaces CRUD
+│       │   ├── reporting_router.py      # Report generation and scheduling
+│       │   ├── flow_router.py           # Material flow network
+│       │   ├── drill_blast_router.py    # Blast patterns and events
+│       │   ├── monitoring_router.py     # Environmental monitoring
+│       │   ├── health_router.py         # Liveness/readiness probes
+│       │   ├── websocket_router.py      # WebSocket connections
+│       │   └── ... (26 more routers)
+│       └── services/         # Business logic layer (60+ files)
+│           ├── auth_service.py          # JWT token management, password hashing
+│           ├── cp_solver.py             # Google OR-Tools CP-SAT integration
+│           ├── lp_allocator.py          # Linear programming material allocation
+│           ├── flow_optimizer.py        # Network flow optimization
+│           ├── haulage_optimizer.py     # Haul route shortest path (Dijkstra)
+│           ├── monte_carlo_quality.py   # Quality Monte Carlo simulation
+│           ├── kriging_service.py       # Spatial interpolation for geology
+│           ├── report_pack.py           # Multi-section report generation
+│           ├── comprehensive_seed_service.py # Demo data generation
+│           └── ... (50+ more services)
+│
+├── frontend/                 # React 19 + Vite frontend application
+│   ├── package.json          # Node.js dependencies and scripts
+│   ├── Dockerfile            # Frontend container definition
+│   ├── vite.config.js        # Vite build configuration
+│   └── src/
+│       ├── App.jsx           # Root component with routing
+│       ├── main.jsx          # React DOM render entry point
+│       ├── index.css         # Global styles and CSS custom properties
+│       ├── context/          # React contexts (Auth, Site, Theme)
+│       ├── pages/            # Page-level components (10 pages)
+│       │   ├── LandingPage.jsx
+│       │   ├── LoginPage.jsx
+│       │   ├── SiteDashboard.jsx
+│       │   ├── PlannerWorkspace.jsx
+│       │   ├── OperationsDashboard.jsx
+│       │   ├── FleetDashboard.jsx
+│       │   ├── DrillBlastDashboard.jsx
+│       │   ├── MonitoringDashboard.jsx
+│       │   ├── SeedDataPage.jsx
+│       │   └── NotFoundPage.jsx
+│       └── components/       # Reusable UI components (41 directories)
+│           ├── annotation/   # Annotation tools (toolbar, renderer)
+│           ├── cad/          # CAD string editor, print layout
+│           ├── calendar/     # Shift calendar builder
+│           ├── collaboration/# Presence indicators, edit locks
+│           ├── dashboard/    # KPI cards, production widgets
+│           ├── data/         # Data management hub
+│           ├── drill-blast/  # Blast pattern editor
+│           ├── fleet/        # Fleet panel, maintenance views
+│           ├── flow/         # Flow network editor
+│           ├── gantt/        # Gantt chart component
+│           ├── geology/      # Borehole viewer, seam editor
+│           ├── geotech/      # Slope analysis, hazard zones
+│           ├── quality/      # Washability, penalty curves
+│           ├── reporting/    # Report builder, reconciliation
+│           ├── scheduler/    # Optimizer controls, diagnostics
+│           ├── site/         # Site builder wizard
+│           ├── spatial/      # Volume calculator, haulage routes
+│           ├── surface/      # Surface tools panel
+│           ├── ui/           # Shared UI primitives (buttons, modals)
+│           ├── viewer3d/     # 3D terrain and block model viewer
+│           ├── washplant/    # Wash plant configuration
+│           └── ... (20 more component directories)
+│
+├── docs/                     # Documentation files
+├── tests/                    # Test suites
+└── data/                     # Local data storage (gitignored)
+```
+
+---
+
+## Backend API Reference
+
+All API endpoints are documented automatically via FastAPI's OpenAPI integration.
+Visit `http://localhost:8000/docs` for the interactive Swagger UI,
+or `http://localhost:8000/redoc` for the ReDoc alternative.
+
+### API Router Summary (40 Routers)
+
+| Router | Prefix | Description |
+|--------|--------|-------------|
+| `auth_router` | `/auth` | User registration, login, JWT token management |
+| `config_router` | `/config` | Site configuration, settings CRUD |
+| `schedule_router` | `/schedule` | Schedule versions, tasks, solver execution |
+| `optimization_router` | `/optimization` | CP-SAT and LP solver runs, diagnostics |
+| `cp_solver_router` | `/cp-solver` | Direct CP-SAT solver API for advanced users |
+| `quality_router` | `/quality` | Quality data, compliance checks |
+| `fleet_router` | `/fleet` | Equipment, GPS, haul cycles, maintenance |
+| `geology_router` | `/geology` | Geological layers, seam models |
+| `borehole_router` | `/boreholes` | Borehole data and interval management |
+| `block_model_router` | `/block-models` | Block model CRUD and queries |
+| `surface_router` | `/surfaces` | Terrain surface management |
+| `surface_tools_router` | `/surface-tools` | Surface queries, operations, analysis |
+| `surface_history_router` | `/surface-history` | Surface versioning and temporal comparison |
+| `cad_string_router` | `/cad-strings` | CAD polyline CRUD |
+| `annotation_router` | `/annotations` | Map annotations CRUD |
+| `raster_router` | `/raster` | Raster/DEM data import and queries |
+| `file_format_router` | `/files` | DXF, ASCII grid, and other format support |
+| `flow_router` | `/flow` | Material flow network management |
+| `calendar_router` | `/calendar` | Calendar and period management |
+| `planning_horizon_router` | `/horizons` | Planning horizon and target management |
+| `precedence_router` | `/precedence` | Mining sequence constraints |
+| `resources_router` | `/resources` | Resource (equipment/material) management |
+| `demand_router` | `/demand` | Product demand forecasting |
+| `reporting_router` | `/reporting` | Report generation and scheduling |
+| `reports_router` | `/reports` | Report pack downloads |
+| `csv_export_router` | `/export` | CSV data export for any dataset |
+| `analytics_router` | `/analytics` | Advanced analytics and KPIs |
+| `drill_blast_router` | `/drill-blast` | Blast patterns, holes, events |
+| `fleet_router` | `/fleet` | Fleet equipment and tracking |
+| `monitoring_router` | `/monitoring` | Environmental monitoring data |
+| `operations_router` | `/operations` | Shift operations and material movement |
+| `stockpile_router` | `/stockpiles` | Stockpile management |
+| `staged_stockpile_router` | `/staged-stockpiles` | Staged stockpile tracking |
+| `washplant_router` | `/washplant` | Wash plant configuration and data |
+| `wash_table_router` | `/wash-tables` | Washability data tables |
+| `integration_router` | `/integration` | External system integration |
+| `settings_router` | `/settings` | Application settings |
+| `security_router` | `/security` | Security audit and access logs |
+| `crs_router` | `/crs` | Coordinate reference system operations |
+| `websocket_router` | `/ws` | WebSocket connections |
+| `health_router` | `/health` | Liveness, readiness, detailed health probes |
+
+### Common API Patterns
+
+All routers follow consistent REST patterns:
+
+```http
+# List all items for a site
+GET /api/{resource}/site/{site_id}
+
+# Get a single item by ID
+GET /api/{resource}/{id}
+
+# Create a new item
+POST /api/{resource}/
+
+# Update an existing item
+PUT /api/{resource}/{id}
+
+# Delete an item
+DELETE /api/{resource}/{id}
+```
+
+### Authentication
+
+All endpoints (except `/auth/login`, `/auth/register`, `/health/*`) require a JWT token:
+
+```bash
+# Register a new user
+curl -X POST http://localhost:8000/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "planner1", "password": "secure_pass", "email": "planner@mine.com"}'
+
+# Login and get token
+curl -X POST http://localhost:8000/auth/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'username=planner1&password=secure_pass'
+
+# Use token in subsequent requests
+curl http://localhost:8000/config/sites \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN'
+```
+
+---
+
+## Frontend Components Reference
+
+The frontend is organized into 41 component directories, each focused on a specific domain.
+Components use React 19 with hooks, CSS custom properties for theming, and Lucide React for icons.
+
+### Component Directory Map
+
+| Directory | Key Components | Purpose |
+|-----------|---------------|---------|
+| `annotation/` | `AnnotationToolbar`, `AnnotationRenderer` | 10 annotation types with styles |
+| `audit/` | `AuditLogViewer` | Change history viewer |
+| `cad/` | `CADStringEditor`, `PrintLayoutManager` | String editing, print layouts |
+| `calendar/` | `CalendarBuilder`, `ShiftCalendar` | Shift and period calendars |
+| `collaboration/` | `PresenceIndicator`, `EditLock` | Real-time collaboration |
+| `dashboard/` | `KPICards`, `ProductionWidget` | Main dashboard widgets |
+| `data/` | `DataManagementHub` | Centralized CRUD for all datasets |
+| `demand/` | `DemandDashboard`, `ProductEditor` | Customer demand tracking |
+| `drill-blast/` | `BlastPatternEditor`, `FragmentationChart` | Blast planning |
+| `fleet/` | `FleetPanel`, `MaintenancePanel` | Fleet tracking and maintenance |
+| `flow/` | `FlowNetworkEditor`, `NodeEditor` | Material flow network |
+| `gantt/` | `GanttChart`, `TaskEditor` | Interactive Gantt scheduling |
+| `geology/` | `BoreholeViewer`, `SeamEditor` | Geological data |
+| `geotech/` | `SlopeAnalysis`, `HazardZones` | Geotechnical safety |
+| `haulage/` | `HaulageRouter`, `RouteEditor` | Haul route management |
+| `material/` | `MaterialTracker`, `ShiftLog` | Material movement tracking |
+| `monitoring/` | `EnvironmentalDashboard` | Dust, noise, water monitoring |
+| `operations/` | `ShiftSummary`, `Alerts` | Real-time operations |
+| `quality/` | `WashabilityChart`, `PenaltyCurve` | Quality management |
+| `reporting/` | `ReportBuilder`, `ReconciliationPanel` | Report generation |
+| `scheduler/` | `OptimizerControls`, `ScheduleDiagnostics` | Solver integration |
+| `site/` | `SiteBuilderWizard` | New mine site setup |
+| `spatial/` | `VolumeCalculator`, `HaulageRenderer` | Spatial calculations |
+| `surface/` | `SurfaceToolPanel`, `SurfaceQueryTool` | Surface operations |
+| `ui/` | `Button`, `Modal`, `SkeletonLoader`, `Breadcrumb` | Shared UI primitives |
+| `viewer3d/` | `TerrainViewer`, `BlockModelViewer` | 3D WebGL rendering |
+| `washplant/` | `WashPlantConfig` | Wash plant settings |
+
+---
+
+## Domain Models
+
+MineOpt Pro's data layer consists of 21 SQLAlchemy model files defining the complete
+open-cast mining data schema. All models use UUID primary keys and support multi-tenant
+site isolation via `site_id` foreign keys.
+
+### Core Models
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `User` | `users` | `user_id`, `username`, `email`, `hashed_password`, `role` |
+| `Role` | `roles` | `role_id`, `name`, `permissions` (JSON) |
+| `Site` | `sites` | `site_id`, `name`, `location`, `crs_epsg`, `status` |
+
+### Calendar & Planning
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `Calendar` | `calendars` | `calendar_id`, `site_id`, `name`, `year` |
+| `Period` | `periods` | `period_id`, `calendar_id`, `name`, `start_date`, `end_date`, `type` |
+| `PlanningHorizon` | `planning_horizons` | `horizon_id`, `parent_id`, `level`, `targets` |
+| `HorizonTarget` | `horizon_targets` | `target_id`, `horizon_id`, tonnage, ore, waste, quality |
+
+### Scheduling
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `ScheduleVersion` | `schedule_versions` | `version_id`, `site_id`, `status`, `schedule_type` |
+| `Task` | `tasks` | `task_id`, `schedule_version_id`, `resource_id`, `period_id`, `planned_quantity` |
+| `PrecedenceConstraint` | `precedence_constraints` | `constraint_id`, predecessor/successor IDs, lag |
+
+### Resources & Materials
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `MaterialType` | `material_types` | `material_type_id`, `name`, `density`, quality fields |
+| `QualityField` | `quality_fields` | `field_id`, `name`, `unit`, `min`, `max`, `target` |
+| `Activity` | `activities` | `activity_id`, `type` (Mining, Haulage, Processing, etc.) |
+| `Resource` | `resources` | `resource_id`, `type`, `capacity`, `availability` |
+
+### Flow Network
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `FlowNetwork` | `flow_networks` | `network_id`, `site_id`, `name` |
+| `FlowNode` | `flow_nodes` | `node_id`, `type` (Source, Stockpile, Plant, Dump, Customer) |
+| `FlowArc` | `flow_arcs` | `arc_id`, `from_node_id`, `to_node_id`, `capacity` |
+| `ArcQualityObjective` | `arc_quality_objectives` | `objective_id`, `arc_id`, quality bounds |
+
+### Geological
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `Borehole` | `boreholes` | `borehole_id`, `site_id`, collar X/Y/Z, depth |
+| `BoreholeInterval` | `borehole_intervals` | `interval_id`, from/to depth, lithology, quality |
+| `BlockModel` | `block_models` | `model_id`, `site_id`, origin, cell sizes, block count |
+| `Block` | `blocks` | `block_id`, I/J/K indices, grade, density, material type |
+| `Surface` | `surfaces` | `surface_id`, `name`, `type`, `crs_epsg`, points (JSON) |
+
+### Fleet & Operations
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `Equipment` | `equipment` | `equipment_id`, `type`, `model`, `status`, `capacity` |
+| `GPSReading` | `gps_readings` | `reading_id`, `equipment_id`, lat/lon, `timestamp` |
+| `HaulCycle` | `haul_cycles` | `cycle_id`, `equipment_id`, load/haul/dump/return times |
+| `MaintenanceRecord` | `maintenance_records` | `record_id`, `equipment_id`, `type`, `cost` |
+| `Geofence` | `geofences` | `geofence_id`, `name`, `polygon`, `type` (exclusion/inclusion) |
+
+### Safety & Environmental
+
+| Model | Table | Key Fields |
+|-------|-------|------------|
+| `GeotechDomain` | `geotech_domains` | `domain_id`, slope angle, FoS, material properties |
+| `SlopeMonitoringPrism` | `slope_prisms` | `prism_id`, position, displacement vector |
+| `HazardZone` | `hazard_zones` | `zone_id`, `polygon`, `severity`, active/inactive |
+| `FatigueEvent` | `fatigue_events` | `event_id`, `operator_id`, `severity`, `timestamp` |
+| `RehabilitationArea` | `rehabilitation_areas` | `area_id`, hectares, status, target date |
+
+---
+
+## Scheduling and Optimization Engine
+
+The scheduling engine is the heart of MineOpt Pro. It supports three optimization approaches:
+
+### CP-SAT Solver (Constraint Programming)
+
+The CP-SAT solver uses Google OR-Tools to find optimal or near-optimal schedules:
+
+```python
+# How it works internally:
+# 1. Load mining blocks, equipment, periods from database
+# 2. Define decision variables: which block is mined by which equipment in which period
+# 3. Add constraints:
+#    - Equipment capacity per period
+#    - Precedence (block A must be mined before block B)
+#    - Blending quality targets at each destination
+#    - Calendar availability (shifts, holidays, weather)
+# 4. Define objective: minimize cost, maximize throughput, or balance both
+# 5. Solve with configurable time limit
+# 6. Save ScheduleVersion with result tasks
+```
+
+**Configuration options:**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `max_time_seconds` | Maximum solver time | 300 |
+| `objective` | `minimize_cost`, `maximize_throughput`, `balanced` | `balanced` |
+| `num_workers` | Parallel solver threads | 4 |
+| `enforce_precedence` | Respect block mining sequences | `true` |
+| `enforce_blending` | Enforce quality constraints | `true` |
+
+### LP Allocator (Linear Programming)
+
+The LP allocator optimizes material flow allocation across the complete network:
+
+- **Multi-period allocation** — Distribute material across periods to meet demand
+- **Quality blending** — Meet customer quality specs by optimizing source mix
+- **Capacity constraints** — Respect equipment, haulage, and plant throughput limits
+- **Cost minimization** — Minimize total mining, haulage, and processing cost
+
+### Flow Optimizer
+
+The flow optimizer models the mine as a directed graph:
+
+```
+  [Pit A] ──→ [Stockpile ROM] ──→ [Wash Plant] ──→ [Product Stockpile] ──→ [Customer]
+    │                                                        ↑
+  [Pit B] ──→ [Stockpile Low Grade] ────────────────────────┘
+    │
+    └──────→ [Waste Dump]
+```
+
+Nodes represent sources, stockpiles, plants, dumps, and customers.
+Arcs define valid material routes with capacity and quality constraints.
+The optimizer finds the cheapest feasible flow that satisfies all quality requirements.
+
+### Haulage Optimizer
+
+Uses Dijkstra's shortest-path algorithm with edge weights based on:
+- Distance (meters)
+- Grade (positive or negative, affecting fuel and cycle time)
+- Rolling resistance (based on road surface type)
+- Speed limits (per segment)
+
+---
+
+## Quality Management System
+
+### Monte Carlo Quality Simulation
+
+The Monte Carlo engine simulates quality outcomes by:
+
+1. **Sampling** geological variability from borehole/block model data
+2. **Simulating** material streams through the flow network
+3. **Blending** at each node (stockpile, plant) with mass-weighted average quality
+4. **Reporting** probability distributions (P10, P50, P90) for each quality parameter
+
+```
+Typical outputs:
+- Product CV: P10 = 26.5 MJ/kg, P50 = 27.1 MJ/kg, P90 = 27.8 MJ/kg
+- Product Ash: P10 = 11.2%, P50 = 12.5%, P90 = 14.1%
+- Yield: P10 = 62%, P50 = 65%, P90 = 68%
+```
+
+### Washability Analysis
+
+The washability module provides:
+
+- **Float-sink curves** — Yield vs density for each seam/block
+- **Ash-yield curves** — Trade-off between ash rejection and product yield
+- **Cutpoint optimization** — Find the optimal separation density for each processing plant
+- **Multi-product analysis** — Split material into primary and secondary products
+
+### Penalty Curves
+
+Define financial penalties for quality exceedances:
+
+- **Ash penalty** — $/tonne per % above target
+- **Moisture penalty** — Dry tonnage adjustments
+- **CV penalty** — Calorific value rebate/penalty
+- **Sulfur penalty** — Environmental compliance surcharges
+
+The penalty curves are visualized as interactive SVG charts and integrated into
+the optimization objective function.
+
+---
+
+## 3D Visualization and CAD Tools
+
+### Rendering Pipeline
+
+MineOpt Pro uses **Three.js** via **React Three Fiber** for hardware-accelerated 3D rendering:
+
+```
+Surface Data → Triangulation → BufferGeometry → Three.js Mesh → WebGL Canvas
+               (Delaunay)      (vertices,        (material,     (GPU-accelerated
+                                normals,          lighting,      rendering)
+                                colors)           camera)
+```
+
+### CAD String Editor
+
+The CAD string editor supports:
+
+- **Vertex manipulation** — Click to select, drag to move, handles for fine control
+- **Insert vertex** — Click on a segment to add a new point
+- **Delete vertex** — Select and press Delete key
+- **Split string** — Break a string into two at a selected vertex
+- **Merge strings** — Join the endpoints of two strings
+- **Reverse direction** — Flip the vertex order
+- **Close/Open** — Toggle between closed polygon and open polyline
+- **Undo/Redo** — Full edit history with Ctrl+Z / Ctrl+Y
+- **Keyboard shortcuts** — Delete, Escape, Ctrl+Z, Ctrl+Y, Ctrl+S
+
+### Print Layout Manager
+
+Create publication-quality plan sheets:
+
+| Feature | Options |
+|---------|---------|
+| Page Size | A4, A3, A2, A1, A0 |
+| Orientation | Portrait, Landscape |
+| Scale | 1:500 to 1:25,000 |
+| Title Block | Mine name, drawing title, date, revision, author |
+| Scale Bar | Automatic scaling with labeled divisions |
+| North Arrow | Configurable style and position |
+| Grid | Optional coordinate grid overlay |
+| Layer Visibility | Show/hide terrain, strings, annotations, blocks |
+
+---
+
+## Geology and Geotechnical
+
+### Borehole Management
+
+MineOpt Pro supports comprehensive borehole data management:
+
+- **Import** — CSV or DXF borehole collar files with X, Y, Z, depth
+- **Intervals** — Define lithological intervals with from/to depth, rock type, quality parameters
+- **Visualization** — 3D borehole sticks in the terrain viewer with interval coloring
+- **Query** — Filter boreholes by location, depth, quality parameter ranges
+
+### Block Model Management
+
+Block models represent the orebody as a 3D grid of blocks with attributed data:
+
+- **Import** — CSV block model files with I, J, K indices and attribute columns
+- **Attributes** — Grade, density, material type, tonnage factor, quality parameters
+- **Filtering** — Display blocks matching attribute criteria (e.g., grade > 5%)
+- **Volume queries** — Calculate tonnage within arbitrary polygonal boundaries
+
+### Seam Modeling
+
+For stratiform deposits (coal, manganese, iron ore):
+
+- **Seam definition** — Roof and floor surfaces with thickness
+- **Quality modeling** — Quality parameter surfaces via kriging interpolation
+- **Reserve estimation** — Tonnage between roof/floor surfaces within pit boundaries
+- **Seam correlation** — Link borehole intervals to named geological seams
+
+### Kriging Service
+
+Spatial interpolation for creating quality surfaces from point data:
+
+- **Ordinary kriging** — Estimate values at ungauged locations
+- **Variogram modeling** — Fit experimental variograms (spherical, exponential, Gaussian)
+- **Cross-validation** — Leave-one-out validation for model quality assessment
+
+### Geotechnical Safety
+
+- **Slope analysis** — Factor of safety calculations with material properties
+- **Prism monitoring** — Track slope displacement from survey prism readings
+- **Hazard zones** — Define and monitor geotechnical risk areas
+- **Fatigue management** — Operator fatigue scoring and event tracking
+
+---
+
+## Fleet Management System
+
+### Equipment Lifecycle
+
+```
+Register Equipment → Assign to Site → Track GPS → Monitor Haul Cycles
+       ↓                                              ↓
+  Set Maintenance     ←──── Service Alerts ←──── Component Life
+  Schedule                                       Monitoring
+```
+
+### GPS Integration
+
+The fleet system accepts GPS readings with the following data:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `equipment_id` | String | Which machine reported |
+| `latitude` | Float | WGS84 latitude |
+| `longitude` | Float | WGS84 longitude |
+| `altitude` | Float | Elevation in meters (optional) |
+| `speed` | Float | Ground speed in km/h |
+| `heading` | Float | Compass bearing in degrees |
+| `timestamp` | DateTime | UTC timestamp |
+
+### Haul Cycle Detection
+
+The system automatically detects haul cycles from GPS data:
+
+1. **Loading** — Equipment enters a loading zone (source geofence)
+2. **Hauling** — Equipment travels between source and destination
+3. **Dumping** — Equipment enters a dump zone (destination geofence)
+4. **Returning** — Equipment travels back to the loading zone
+
+Cycle metrics calculated: total time, queue time, load time, haul time, dump time, return time.
+
+### Maintenance Management
+
+- **Preventive schedules** — Define service intervals based on hours or calendar
+- **Component life tracking** — Track remaining life for tyres, engine, transmission, etc.
+- **Overdue alerts** — Automatic notifications when service is overdue
+- **Cost tracking** — Parts, labor, and downtime cost per service event
+
+---
+
+## Drill and Blast Planning
+
+### Pattern Design Workflow
+
+1. **Define pattern geometry** — Set burden, spacing, and offset for the drill grid
+2. **Place drill holes** — Auto-generate or manually place holes within the pattern area
+3. **Configure each hole** — Set diameter, depth, charge weight, stemming, and deck charges
+4. **Run fragmentation model** — Kuz-Ram prediction with P80 and size distribution
+5. **Cost estimate** — Automatic calculation of drilling, explosives, and accessories cost
+6. **Link to schedule** — Associate blast event with mining tasks and schedule periods
+
+### Fragmentation Prediction (Kuz-Ram model)
+
+```
+Inputs:                    Outputs:
+- Rock factor (A)          - Mean fragment size (x̄)
+- Powder factor (q)        - P80 (80% passing size)
+- Burden (B)               - Size distribution curve
+- Spacing (S)              - Uniformity index (n)
+- Hole diameter (D)
+- Charge length (L)
+- Explosive density (ρ)
+```
+
+---
+
+## Environmental Monitoring
+
+### Monitoring Domains
+
+| Domain | Parameters | Alert Thresholds |
+|--------|-----------|------------------|
+| **Dust** | PM2.5, PM10 (µg/m³) | Regulatory limits (e.g., 150 µg/m³ PM10 24-hr) |
+| **Noise** | dB(A) Leq, Lmax | Daytime/nighttime limits (e.g., 65/45 dB(A)) |
+| **Water** | pH, turbidity (NTU), TSS, metals | License conditions per monitoring point |
+| **Rehab** | Area (ha), vegetation cover (%) | Annual targets per rehabilitation zone |
+
+### Compliance Workflow
+
+```
+Reading uploaded → Check against threshold → Pass: log as compliant
+                                            → Fail: create alert → notify officer
+                                                                 → log exceedance
+                                                                 → generate report
+```
+
+---
+
+## Reporting and Export
+
+### Report Types
+
+| Report | Content | Frequency |
+|--------|---------|-----------|
+| **Daily Production** | Tonnage by source/destination, equipment utilization, quality KPIs | Daily |
+| **Weekly Summary** | Production vs plan, equipment availability, safety incidents | Weekly |
+| **Monthly Management** | Full KPI dashboard, financial reconciliation, variance analysis | Monthly |
+| **Quality Compliance** | Quality parameter tracking, exceedance log, trend charts | On-demand |
+| **Reconciliation** | Planned vs actual tonnage, grade, strip ratio | On-demand |
+| **Shift Handover** | End-of-shift summary with incidents, production, and operator notes | Per shift |
+
+### Report Pack Generation
+
+The report pack generator creates multi-section reports:
+
+```python
+# Each report contains:
+# - Header with site name, date range, report type
+# - KPI section with key metrics
+# - Data tables with detailed breakdown
+# - Charts and visualizations
+# - Appendices with raw data references
+```
+
+### Export Options
+
+- **CSV** — TabularData export for any dataset via the export router
+- **PDF** — Report packs with formatted multi-section output
+- **Email** — Scheduled delivery to configured recipients via SMTP
+
+---
+
+## Collaboration and Real-Time Features
+
+### WebSocket Architecture
+
+```
+Client connects: ws://localhost:8000/ws/{client_id}
+
+Message types received:
+├── presence_update    — {user_id, status, editing_entity}
+├── schedule_progress  — {run_id, percentage, status, message}
+├── fleet_position     — {equipment_id, lat, lon, speed, heading}
+├── notification       — {type, severity, title, body}
+└── edit_lock          — {entity_type, entity_id, locked_by, heartbeat}
+```
+
+### Presence System
+
+- Each connected user broadcasts their status every 30 seconds
+- Green dot = active, yellow = idle (>5 min), red = offline
+- Tooltip shows what entity the user is currently editing
+
+### Edit Locking
+
+- When a user starts editing an entity, a lock is created
+- Other users see the lock indicator and cannot edit until released
+- Locks auto-expire after 60 seconds without heartbeat
+- Force-unlock available for admin users
+
+---
+
+## Data Management Hub
+
+The Data Management Hub (`DataManagementHub.jsx`) provides centralized CRUD for all datasets:
+
+### Supported Dataset Types
+
+| Tab | Datasets | Import Formats |
+|-----|----------|---------------|
+| Boreholes | Collar data, interval logs | CSV, DXF |
+| Surfaces | Terrain surfaces, pit designs | ASC, GeoTIFF, DXF |
+| Block Models | Geological block models | CSV, BMF |
+| Equipment | Fleet inventory and specs | CSV, JSON |
+| Drill & Blast | Patterns, holes, events | CSV |
+| Quality | Lab results, quality logs | CSV, TXT |
+| Documents | Reports, plans, procedures | PDF, DOCX |
+| Maps | Spatial layers, rasters | GeoTIFF, SHP |
+
+### Features
+
+- **Search** — Full-text search across all dataset names and tags
+- **Filter by tag** — Tag-based filtering for organizing datasets
+- **Import panel** — Drag-and-drop file upload with format auto-detection
+- **Bulk operations** — Select multiple datasets for tagging, archiving, or deletion
+- **Quality indicators** — Visual badges showing data completeness and recency
+
+---
+
+## Security and Authentication
+
+### Authentication Flow
+
+```
+1. User submits credentials → POST /auth/token
+2. Server validates password (bcrypt hash comparison)
+3. Server issues JWT token with expiry
+4. Client stores token in localStorage
+5. Client sends token in Authorization header for all API calls
+6. Server validates token on each request via dependency injection
+```
+
+### Role-Based Access Control
+
+| Role | Permissions |
+|------|------------|
+| **Admin** | Full access: manage users, sites, settings, all data |
+| **Planner** | Read/write: schedules, flow networks, precedence, reports |
+| **Operator** | Read/write: shift logs, material movement, equipment status |
+| **Viewer** | Read-only access to all dashboards and reports |
+
+### Security Best Practices
+
+- Change `SECRET_KEY` in production (never use the default)
+- Use HTTPS in production (terminate TLS at the reverse proxy)
+- Configure `CORS_ORIGINS` to allow only trusted frontend domains
+- Rotate JWT tokens with reasonable expiry times
+- Use strong passwords (minimum 8 characters recommended)
+
+---
+
+## Tools and Workflows
+
+### Common Workflows
+
+#### Setting Up a New Mine Site
+
+1. **Launch Site Builder Wizard** (from Site Dashboard → New Site)
+2. **Step 1 — Identity**: Enter site name, select coordinate reference system, set location
+3. **Step 2 — Geology**: Import borehole CSV files, define geological seams
+4. **Step 3 — Topography**: Upload terrain surface (DXF or ASCII grid)
+5. **Step 4 — Fleet**: Define equipment types, quantities, and production rates
+6. **Step 5 — Calendar**: Configure shifts, holidays, and operating schedule
+7. **Submit**: Site is created with all imported data ready for planning
+
+#### Creating a Production Schedule
+
+1. Navigate to **Planner Workspace**
+2. Select/create a **Calendar** with periods (months, weeks, or shifts)
+3. Define **Planning Horizons** with production targets per period
+4. Set up the **Flow Network** (sources → stockpiles → plants → customers)
+5. Define **Precedence Constraints** (which blocks must be mined before others)
+6. Click **Run Optimizer** and select solver type (CP-SAT or LP)
+7. Monitor progress via WebSocket updates
+8. Review results in the **Gantt Chart** and **Schedule Diagnostics**
+9. Compare with previous schedule versions
+10. **Publish** the schedule to lock it as the authoritative plan
+
+#### Running Quality Simulation
+
+1. Navigate to Quality section
+2. Select source blocks and destination blending points
+3. Click **Run Monte Carlo** to simulate 1,000+ blending scenarios
+4. Review probability distributions (P10, P50, P90) per quality parameter
+5. Adjust cutpoints or source mix and re-run
+6. Export results to CSV or include in report pack
+
+#### Managing Fleet
+
+1. Open **Fleet Dashboard**
+2. View real-time equipment positions on the map
+3. Check **Maintenance Panel** for upcoming and overdue services
+4. Review **Haul Cycles** for productivity analysis
+5. Define/edit **Geofences** for exclusion zones
+6. View **Equipment KPIs** — utilization, availability, MTBF
+
+#### Generating Reports
+
+1. Navigate to **Reporting** section
+2. Select report type (Daily, Weekly, Monthly, Quality, Reconciliation)
+3. Set date range and site
+4. Click **Generate**
+5. View report in-app or export to CSV/PDF
+6. Optionally schedule automated delivery via email
+
+---
+
+## UI Components and Design System
+
+### Theme System
+
+MineOpt Pro uses CSS custom properties for a comprehensive theming system:
+
+```css
+/* All components reference theme variables */
+:root {
+  --color-bg-primary: #0f172a;      /* Deep blue-black */
+  --color-bg-secondary: #1e293b;    /* Card backgrounds */
+  --color-bg-tertiary: #334155;     /* Elevated surfaces */
+  --color-text-primary: #f1f5f9;    /* Primary text */
+  --color-text-secondary: #94a3b8;  /* Secondary text */
+  --color-accent: #3b82f6;          /* Blue accent */
+  --color-success: #22c55e;         /* Green indicators */
+  --color-warning: #f59e0b;         /* Yellow alerts */
+  --color-error: #ef4444;           /* Red errors */
+}
+
+[data-theme='light'] {
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #ffffff;
+  --color-text-primary: #0f172a;
+  /* ... */
+}
+```
+
+### Shared UI Primitives
+
+| Component | Purpose |
+|-----------|---------|
+| `Button` | Styled button with variant, size, and loading state |
+| `Modal` | Accessible dialog overlay with focus trapping |
+| `SkeletonLoader` | Content placeholder with shimmer animation |
+| `Breadcrumb` | Navigation breadcrumb with clickable path segments |
+| `Tooltip` | Contextual information on hover |
+| `Badge` | Status indicators (online, pending, error) |
+| `Card` | Elevated surface container with optional header |
+| `DataTable` | Sortable, filterable data grid |
+
+### Responsive Design
+
+All components are responsive and work across:
+
+- **Desktop** (1920px+) — Full multi-panel layouts
+- **Laptop** (1366px) — Condensed layouts with collapsible panels
+- **Tablet** (768px) — Stacked layout with tabbed navigation
+
+---
+
+## Testing Guide
+
+### Backend Tests
+
+```bash
+# Run all backend tests
+cd backend
+python -m pytest tests/ -v
+
+# Run specific test module
+python -m pytest tests/test_cp_solver.py -v
+
+# Run with coverage report
+python -m pytest tests/ --cov=app --cov-report=html
+```
+
+### Frontend Tests
+
+```bash
+# Run all frontend tests
+cd frontend
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Run in watch mode during development
+npx jest --watch
+```
+
+### Integration Tests
+
+```bash
+# Full-stack verification
+python verify_full_flow.py
+```
+
+This script tests:
+- Backend API health endpoints
+- Authentication flow (register, login, token refresh)
+- Site creation and configuration
+- Data seeding
+- Schedule creation and optimizer execution
+- Report generation
+
+### Writing New Tests
+
+**Backend test pattern:**
+
+```python
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+def test_create_site():
+    response = client.post("/config/sites", json={
+        "name": "Test Mine",
+        "location": "Test Location",
+        "crs_epsg": 32735
+    })
+    assert response.status_code == 200
+    assert response.json()["name"] == "Test Mine"
+```
+
+**Frontend test pattern:**
+
+```jsx
+import { render, screen } from '@testing-library/react';
+import SiteDashboard from '../pages/SiteDashboard';
+
+test('renders dashboard KPI cards', () => {
+  render(<SiteDashboard />);
+  expect(screen.getByText(/Production Summary/i)).toBeInTheDocument();
+});
+```
+
+---
+
+## Troubleshooting Guide
+
+### Backend Issues
+
+#### "ModuleNotFoundError: No module named 'app'"
+
+**Cause:** You're not in the `backend` directory, or the virtual environment isn't activated.
+
+```bash
+# Fix:
+cd backend
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+uvicorn app.main:app --reload --port 8000
+```
+
+#### "sqlite3.OperationalError: no such table"
+
+**Cause:** Database tables haven't been created yet.
+
+```bash
+# Fix: The tables are auto-created on first startup.
+# If the database is corrupted, delete and restart:
+rm backend/mineopt_pro.db
+uvicorn app.main:app --reload --port 8000
+```
+
+#### "CORS Error" in browser console
+
+**Cause:** Frontend origin not in the allowed CORS list.
+
+```bash
+# Fix: Set CORS_ORIGINS in .env
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+```
+
+#### Port 8000 already in use
+
+```bash
+# Find and kill the process using port 8000
+# Linux/macOS:
+lsof -i :8000 | grep LISTEN
+kill -9 <PID>
+
 # Windows:
 netstat -ano | findstr :8000
 taskkill /PID <PID> /F
 
-# Mac/Linux:
-lsof -i :8000
-kill -9 <PID>
+# Or use a different port:
+uvicorn app.main:app --reload --port 8001
 ```
 
-#### Database Connection Error
+#### Database migration errors
 
 ```bash
-# SQLite: Delete and recreate the database
-cd backend
-del mineopt.db          # Windows
-rm mineopt.db           # Mac/Linux
-
-# Restart the server - database recreates automatically
-uvicorn app.main:app --reload
+# If Alembic migrations fail, fall back to auto-creation:
+# Delete the database and let SQLAlchemy recreate all tables
+rm backend/mineopt_pro.db
+# Then restart the backend
 ```
-
-#### WeasyPrint PDF Generation Issues
-
-WeasyPrint requires GTK libraries for PDF generation:
-
-**Windows:**
-```bash
-# Install GTK via MSYS2 or download pre-built binaries
-# See: https://weasyprint.readthedocs.io/en/stable/install.html#windows
-```
-
-**Mac:**
-```bash
-brew install pango
-brew install gtk+3
-```
-
-**Linux:**
-```bash
-sudo apt-get install libpango-1.0-0 libpangocairo-1.0-0
-```
-
----
 
 ### Frontend Issues
 
-#### "npm install" Fails
+#### "npm install" fails with peer dependency errors
 
 ```bash
-# Clear npm cache
-npm cache clean --force
-
-# Delete node_modules and package-lock
-rmdir /s /q node_modules         # Windows
-rm -rf node_modules              # Mac/Linux
-del package-lock.json            # Windows
-rm package-lock.json             # Mac/Linux
-
-# Reinstall
-npm install
+# Try with legacy peer deps flag:
+npm install --legacy-peer-deps
 ```
 
-#### "Cannot connect to backend" / CORS Errors
+#### Blank page after login
 
-1. Verify backend is running on port 8000:
-   - Open http://localhost:8000 in browser
-   - Should see `{"status": "MineOpt Pro Server Running"}`
+**Cause:** No site selected. The dashboard requires an active site context.
 
-2. Check allowed origins in backend:
-   - Frontend should be on http://localhost:5173 or http://localhost:3000
+```
+Fix:
+1. Navigate to the Seed Data page
+2. Run the data seeder to create demo sites
+3. Select a site from the site selector dropdown
+```
 
-#### Page Shows Blank / White Screen
+#### 3D viewer shows black screen
+
+**Cause:** WebGL not supported or GPU driver issues.
+
+```
+Fixes:
+1. Try a different browser (Chrome/Edge recommended for WebGL2)
+2. Update your GPU drivers
+3. Check browser console for Three.js errors
+4. Ensure your machine has a dedicated GPU (integrated GPUs may struggle)
+```
+
+#### Components not rendering / white screen
+
+```
+Debugging steps:
+1. Open browser Developer Tools (F12) → Console tab
+2. Look for red error messages
+3. Check Network tab for failed API calls (401 = auth expired, 404 = wrong URL)
+4. Try hard-refreshing: Ctrl+Shift+R
+5. Clear localStorage: Developer Tools → Application → Local Storage → Clear
+```
+
+### Docker Issues
+
+#### Container won't start
 
 ```bash
-# Check browser console for errors (F12 → Console tab)
+# Check container logs
+docker-compose logs backend
+docker-compose logs frontend
 
-# Common fixes:
-# 1. Restart the dev server
-npm run dev
-
-# 2. Clear browser cache (Ctrl+Shift+R)
-
-# 3. Check for JavaScript errors in console
+# Common causes:
+# - Port conflict: change ports in docker-compose.yml
+# - Missing .env file: cp .env.example .env
+# - Database not ready: backend depends_on with healthcheck handles this
 ```
 
-#### 3D View Not Rendering
-
-1. Ensure your browser supports WebGL:
-   - Go to https://get.webgl.org/
-   - Should see a spinning cube
-
-2. Update graphics drivers
-
-3. Try a different browser (Chrome/Firefox recommended)
-
----
-
-### Common Error Messages and Solutions
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `ENOENT: no such file or directory` | Missing node_modules | Run `npm install` in frontend folder |
-| `ModuleNotFoundError` | Missing Python packages | Activate venv and run `pip install -r requirements.txt` |
-| `Connection refused` | Backend not running | Start backend with `uvicorn app.main:app --reload` |
-| `CORS error` | Cross-origin blocked | Ensure correct ports (8000 backend, 5173 frontend) |
-| `401 Unauthorized` | Token expired/invalid | Log out and log in again |
-| `422 Validation Error` | Invalid request data | Check request body matches API schema |
-| `500 Internal Server Error` | Backend bug | Check backend console for traceback |
-
----
-
-## 📦 Project Structure
-
-```
-Open-Cast_Mine_Production_Optimization_Dashboard/
-│
-├── 📁 backend/                      # Python FastAPI backend
-│   ├── 📁 app/
-│   │   ├── 📁 domain/               # SQLAlchemy database models
-│   │   │   ├── models_core.py       # User, Role, Site
-│   │   │   ├── models_calendar.py   # Calendar, Period
-│   │   │   ├── models_fleet.py      # Equipment, GPS, Geofence
-│   │   │   ├── models_drill_blast.py # BlastPattern, DrillHole
-│   │   │   ├── models_flow.py       # FlowNetwork, FlowNode, FlowArc
-│   │   │   ├── models_geotech_safety.py # Prism, HazardZone
-│   │   │   ├── models_material_shift.py # LoadTicket, Shift
-│   │   │   ├── models_surface.py    # Surface, CADString
-│   │   │   └── ... (18 total model files)
-│   │   │
-│   │   ├── 📁 services/             # Business logic layer
-│   │   │   ├── fleet_service.py     # Fleet management logic
-│   │   │   ├── drill_blast_service.py # Blast pattern logic
-│   │   │   ├── schedule_engine.py   # Scheduling optimization
-│   │   │   ├── lp_allocator.py      # Linear programming solver
-│   │   │   ├── cp_solver_service.py # Constraint programming
-│   │   │   ├── quality_simulator.py # Monte Carlo simulation
-│   │   │   ├── wash_plant_service.py # Wash plant processing
-│   │   │   ├── kriging_service.py   # Geostatistics
-│   │   │   ├── dxf_service.py       # CAD file handling
-│   │   │   └── ... (50+ service files)
-│   │   │
-│   │   ├── 📁 routers/              # API endpoint definitions
-│   │   │   ├── auth_router.py       # Authentication
-│   │   │   ├── schedule_router.py   # Scheduling API
-│   │   │   ├── fleet_router.py      # Fleet API
-│   │   │   ├── drill_blast_router.py # Drill & blast API
-│   │   │   ├── flow_router.py       # Material flow API
-│   │   │   ├── quality_router.py    # Quality API
-│   │   │   └── ... (31 total routers)
-│   │   │
-│   │   ├── database.py              # Database connection setup
-│   │   └── main.py                  # FastAPI application entry
-│   │
-│   ├── 📁 tests/                    # Pytest test files
-│   │   ├── test_services.py         # Service unit tests
-│   │   ├── test_api_endpoints.py    # API integration tests
-│   │   ├── test_e2e_workflows.py    # End-to-end tests
-│   │   └── ... (22 test files)
-│   │
-│   └── requirements.txt             # Python dependencies
-│
-├── 📁 frontend/                     # React frontend application
-│   ├── 📁 src/
-│   │   ├── 📁 components/           # Reusable React components
-│   │   │   ├── 📁 spatial/          # 3D visualization
-│   │   │   │   ├── Viewport3D.jsx   # Main 3D canvas
-│   │   │   │   ├── SurfaceRenderer.jsx
-│   │   │   │   ├── BlockModelRenderer.jsx
-│   │   │   │   └── VolumeCalculator.jsx
-│   │   │   │
-│   │   │   ├── 📁 scheduler/        # Scheduling components
-│   │   │   │   ├── GanttChart.jsx   # Interactive Gantt
-│   │   │   │   ├── GanttTaskBar.jsx
-│   │   │   │   ├── GanttContextMenu.jsx
-│   │   │   │   └── DiagnosticsPanel.jsx
-│   │   │   │
-│   │   │   ├── 📁 fleet/            # Fleet management UI
-│   │   │   │   ├── FleetMapOverlay.jsx
-│   │   │   │   ├── EquipmentDetailCard.jsx
-│   │   │   │   ├── HaulCycleDashboard.jsx
-│   │   │   │   └── MaintenanceCalendar.jsx
-│   │   │   │
-│   │   │   ├── 📁 quality/          # Quality management
-│   │   │   │   ├── QualitySimulation.jsx
-│   │   │   │   └── SimulationPanel.jsx
-│   │   │   │
-│   │   │   ├── 📁 import/           # Data import
-│   │   │   │   ├── FileUploader.jsx
-│   │   │   │   ├── ColumnMapper.jsx
-│   │   │   │   └── TerrainImportPanel.jsx
-│   │   │   │
-│   │   │   └── ... (30 component directories)
-│   │   │
-│   │   ├── 📁 pages/                # Page-level components
-│   │   │   ├── LandingPage.jsx      # Public homepage
-│   │   │   ├── LoginPage.jsx        # Authentication
-│   │   │   ├── SiteDashboard.jsx    # Main dashboard
-│   │   │   └── PlannerWorkspace.jsx # Planner interface
-│   │   │
-│   │   ├── 📁 hooks/                # Custom React hooks
-│   │   ├── 📁 services/             # API service layer
-│   │   ├── App.jsx                  # Main React component
-│   │   └── main.jsx                 # Application entry
-│   │
-│   └── package.json                 # JavaScript dependencies
-│
-├── 📁 docs/                         # Documentation
-│   ├── API_DOCUMENTATION.md         # API reference
-│   ├── DEVELOPER_GUIDE.md           # Developer guide
-│   ├── USER_GUIDE.md               # User manual
-│   └── requirements.md              # Requirements document
-│
-├── docker-compose.yml               # Docker configuration
-├── .env.example                     # Environment template
-└── README.md                        # This file
-```
-
-### Visual Architecture Map (How a user action travels through the system)
-
-```text
-[User in Browser]
-       |
-       v
-[React Page / Component]
-       |
-       v
-[frontend/src/services/api.js]
-       |
-       v
-[FastAPI Router Endpoint]
-       |
-       v
-[Service Layer Business Logic]
-       |
-       v
-[SQLAlchemy Models + Database]
-       |
-       v
-[JSON Response Back to UI]
-```
-
-### Visual Runtime Topology (Local Development)
-
-```text
-┌─────────────────────────────┐
-│ Browser (localhost:5173)    │
-│ React UI                    │
-└──────────────┬──────────────┘
-               │ HTTP/JSON
-               ▼
-┌─────────────────────────────┐
-│ FastAPI (localhost:8000)    │
-│ Routers + Services + Models │
-└──────────────┬──────────────┘
-               │ SQL
-               ▼
-┌─────────────────────────────┐
-│ SQLite or PostgreSQL        │
-│ Site, schedule, flow, etc.  │
-└─────────────────────────────┘
-```
-
-### Visual Frontend Route Hierarchy
-
-```text
-/                       -> LandingPage
-/login                  -> LoginPage
-/register               -> LoginPage (register mode)
-/app/dashboard          -> SiteDashboard
-/app/planner            -> PlannerWorkspace (tab-driven)
-/app/fleet              -> FleetDashboard
-/app/drill-blast        -> DrillBlastDashboard
-/app/operations         -> OperationsDashboard
-/app/monitoring         -> MonitoringDashboard
-/app/seed-data          -> SeedDataPage
-```
-
-### Visual Planner Tab Hierarchy
-
-```text
-/app/planner?tab=spatial
-/app/planner?tab=gantt
-/app/planner?tab=schedule-control
-/app/planner?tab=reporting
-/app/planner?tab=flow-editor
-/app/planner?tab=product-specs
-/app/planner?tab=resources
-/app/planner?tab=geology
-/app/planner?tab=data
-/app/planner?tab=import
-/app/planner?tab=integrations
-/app/planner?tab=settings
-```
-
-### Visual "Where to Edit What" Guide
-
-| If you want to change... | Start here |
-|------|------|
-| API endpoint behavior | `backend/app/routers/` |
-| Business rules/calculations | `backend/app/services/` |
-| Database entities/fields | `backend/app/domain/` |
-| UI page routing | `frontend/src/App.jsx` |
-| Sidebar navigation/menu | `frontend/src/components/layout/AppLayout.jsx` |
-| Planner tab orchestration | `frontend/src/pages/PlannerWorkspace.jsx` |
-| API call wiring in UI | `frontend/src/services/api.js` |
-| Docs and plans | `docs/` |
-
-### Visual "How to verify structure is healthy"
-
-Run from project root:
+#### "Cannot connect to database" in Docker
 
 ```bash
-# Backend starts
-cd backend
-uvicorn app.main:app --reload --port 8000
+# Ensure PostgreSQL is healthy before backend starts
+docker-compose ps  # Check postgres status is 'healthy'
 
-# Frontend starts (new terminal)
-cd frontend
-npm run dev
-```
-
-**👀 You should see:**
-
-- backend: startup complete + table init log
-- frontend: Vite local URL output
-- app pages resolve without route 404 for listed routes
-
----
-
-## 🧪 Testing
-
-### Running Backend Tests
-
-```bash
-cd backend
-
-# Run all tests
-pytest
-
-# Run with verbose output
-pytest -v
-
-# Run specific test file
-pytest tests/test_services.py
-
-# Run tests matching a pattern
-pytest -k "test_blend"
-
-# Generate coverage report
-pytest --cov=app --cov-report=html
-# Open htmlcov/index.html in browser to view
-```
-
-### Running Frontend Tests
-
-```bash
-cd frontend
-
-# Run tests
-npm test
-
-# Run with watch mode
-npm test -- --watch
-
-# Generate coverage
-npm test -- --coverage
+# If not, check PostgreSQL logs:
+docker-compose logs postgres
 ```
 
 ---
 
-## 🤝 Contributing
+## Frequently Asked Questions
 
-We welcome contributions! Here's how to get started:
+### General
 
-1. **Fork the repository**
-   - Click "Fork" on GitHub
+**Q: Is MineOpt Pro free to use?**
 
-2. **Clone your fork**
-   ```bash
-   git clone https://github.com/SIHLE-MTSHALI/MineOpt-pro.git
-   cd MineOpt-pro
-   ```
+A: Yes. MineOpt Pro is released under the MIT License. You can use, modify, and distribute it
+freely for both personal and commercial purposes.
 
-3. **Create a feature branch**
-   ```bash
-   git checkout -b feature/my-awesome-feature
-   ```
+**Q: Does it work for underground mines?**
 
-4. **Make your changes**
-   - Follow existing code style
-   - Add tests for new features
-   - Update documentation
+A: MineOpt Pro is designed primarily for **open-cast (surface) mining**. Many concepts
+(scheduling, quality, fleet) apply to underground mines, but the 3D visualization and
+drill & blast modules are specifically tailored for surface operations.
 
-5. **Run tests**
-   ```bash
-   cd backend && pytest
-   cd ../frontend && npm test
-   ```
+**Q: What commodity types are supported?**
 
-6. **Commit your changes**
-   ```bash
-   git commit -m 'feat: add my awesome feature'
-   ```
-   Use conventional commit messages:
+A: MineOpt Pro is commodity-agnostic. It has been designed to handle coal, iron ore,
+manganese, copper, gold, and any other minerals mined in open-cast operations.
+The quality parameters and washability analysis are configurable per commodity.
+
+**Q: How much data can it handle?**
+
+A: The system has been tested with:
+- Block models up to 500,000 blocks
+- Schedules with 10,000+ tasks
+- GPS feeds of 50+ trucks at 10-second intervals
+- Borehole datasets of 1,000+ holes
+
+For very large datasets (millions of blocks), consider using PostgreSQL instead of SQLite
+and ensure adequate server memory (8GB+ recommended).
+
+**Q: Can I connect it to my existing mine systems?**
+
+A: Yes. The integration router (`/integration`) supports:
+- REST API webhooks for external system notifications
+- CSV/JSON import/export for batch data exchange
+- External ID mapping for cross-referencing entities
+- BI extract publishing for data warehouse integration
+
+### Technical
+
+**Q: Can I use PostgreSQL instead of SQLite?**
+
+A: Yes. Set the `DATABASE_URL` environment variable to your PostgreSQL connection string.
+SQLAlchemy handles the switch transparently — no code changes required.
+
+**Q: How do I reset all data?**
+
+```bash
+# SQLite: delete the database file
+rm backend/mineopt_pro.db
+
+# PostgreSQL: drop and recreate the database
+psql -U mineopt -c 'DROP DATABASE mineopt_pro;'
+psql -U mineopt -c 'CREATE DATABASE mineopt_pro;'
+
+# Then restart the backend (tables auto-create)
+```
+
+**Q: How do I add a new API endpoint?**
+
+1. Create a new router file in `backend/app/routers/`
+2. Define your FastAPI route functions
+3. Import and register the router in `backend/app/main.py`
+4. Create corresponding service in `backend/app/services/`
+5. If needed, add domain models in `backend/app/domain/`
+
+**Q: How do I add a new frontend component?**
+
+1. Create a new directory in `frontend/src/components/`
+2. Add your `.jsx` component file
+3. Use CSS custom properties (`var(--color-*)`) for theme compatibility
+4. Use Lucide React for icons
+5. Import and use in the appropriate page component
+
+**Q: Why does the scheduler take a long time?**
+
+A: Constraint programming (CP-SAT) solving time depends on problem size.
+Tips to speed up:
+- Reduce the number of periods in the planning horizon
+- Decrease the number of mining blocks
+- Increase `max_time_seconds` for better solutions (not faster)
+- Use the LP allocator for approximate solutions
+- Enable parallel solving with `num_workers > 1`
+
+**Q: Can I use this without the 3D viewer?**
+
+A: Absolutely. The 3D viewer is one module among many. All scheduling, quality,
+fleet, reporting, and data management features work without 3D visualization.
+The 3D viewer simply won't render if no surface data is loaded.
+
+**Q: How do I back up my data?**
+
+```bash
+# SQLite (development)
+cp backend/mineopt_pro.db backup_$(date +%Y%m%d).db
+
+# PostgreSQL (production)
+pg_dump -U mineopt mineopt_pro > backup_$(date +%Y%m%d).sql
+```
+
+---
+
+## Performance Tuning
+
+### Backend Performance
+
+| Setting | Default | Recommended for Production |
+|---------|---------|---------------------------|
+| Workers | 1 | 4–8 (match CPU cores) |
+| Database | SQLite | PostgreSQL with connection pooling |
+| Solver threads | 1 | 4+ for CP-SAT |
+| Solver time limit | 300s | Adjust based on problem size |
+
+```bash
+# Production backend with multiple workers
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### Frontend Performance
+
+- **3D rendering** — Reduce block model detail for large datasets
+- **Lazy loading** — Components load on-demand via React Suspense
+- **Caching** — API responses cached with configurable TTL
+- **WebSocket** — Debounced updates to prevent UI flooding
+
+### Database Optimization
+
+```sql
+-- Recommended PostgreSQL indexes for large datasets
+CREATE INDEX idx_tasks_site ON tasks(schedule_version_id);
+CREATE INDEX idx_blocks_model ON blocks(model_id);
+CREATE INDEX idx_gps_equipment ON gps_readings(equipment_id, timestamp);
+CREATE INDEX idx_borehole_site ON boreholes(site_id);
+```
+
+---
+
+## Contributing
+
+Contributions are welcome! See below for how to get involved.
+
+### Getting Started
+
+1. **Fork** the repository on GitHub
+2. **Clone** your fork locally
+3. **Create a branch** for your feature: `git checkout -b feature/my-feature`
+4. **Make changes** following the code style guidelines
+5. **Test** your changes locally
+6. **Commit** using [Conventional Commits](https://www.conventionalcommits.org/):
    - `feat:` for new features
    - `fix:` for bug fixes
    - `docs:` for documentation
-   - `refactor:` for code refactoring
+   - `refactor:` for code restructuring
+   - `test:` for test additions
+7. **Push** to your fork and open a **Pull Request**
 
-7. **Push to your fork**
-   ```bash
-   git push origin feature/my-awesome-feature
-   ```
+### Code Style
 
-8. **Open a Pull Request**
-   - Go to the original repository on GitHub
-   - Click "New Pull Request"
-   - Select your branch
+- **Python**: Follow PEP 8, use type hints where practical
+- **JavaScript/React**: Use functional components with hooks, JSDoc for complex functions
+- **CSS**: Use CSS custom properties for all colors and spacing
+- **Commits**: Conventional Commits format (`feat:`, `fix:`, `docs:`, etc.)
 
----
+### Areas for Contribution
 
-## 📚 Additional Resources
-
-### Documentation Links
-
-- **Interactive API Docs:** http://localhost:8000/docs (when server running)
-- **Alternative API Docs (ReDoc):** http://localhost:8000/redoc
-- **User Guide:** [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
-- **Developer Guide:** [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
-- **API Reference:** [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)
-
-### Technology Documentation
-
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [React Documentation](https://react.dev/)
-- [Three.js Documentation](https://threejs.org/docs/)
-- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
-- [Leaflet Documentation](https://leafletjs.com/reference.html)
+- 🐛 Bug fixes and stability improvements
+- 📚 Documentation and examples
+- 🧪 Test coverage expansion
+- 🎨 UI/UX improvements and accessibility
+- 🌐 Internationalization (i18n)
+- 📱 Mobile responsiveness
+- 🔌 New integration connectors
+- ⚡ Performance optimizations
 
 ---
 
-## ❓ Need Help?
+## Future Work and Roadmap
 
-- **Check the Troubleshooting section** above
-- **Open an issue on GitHub** for bugs or feature requests
-- **Start a Discussion** for questions and ideas
-- **Review the API documentation** at http://localhost:8000/docs
+MineOpt Pro is actively developed. Here are the planned enhancements:
+
+### 🤖 Agentic Scheduling (Next Major Feature)
+
+The next major feature is an **AI-powered agentic scheduling system** that will:
+
+- **Autonomous schedule generation** — An AI agent that understands mine constraints,
+  geological data, and business objectives to generate optimized schedules with minimal
+  human input
+- **Natural language interactions** — Ask the agent questions like:
+  - "What happens if we delay Pit B by two weeks?"
+  - "Optimize for maximum coal quality this quarter"
+  - "Suggest the best three schedule scenarios for next month"
+- **Adaptive replanning** — Agent detects schedule deviations from production data and
+  automatically proposes corrective schedule adjustments
+- **Multi-objective negotiation** — Agent balances conflicting objectives (cost vs quality
+  vs throughput) and presents Pareto-optimal choices
+- **Learning from history** — Agent improves recommendations based on past schedule
+  performance, equipment breakdowns, and geological surprises
+
+### 🏗️ AI-Assisted Mine Design
+
+Future AI capabilities for mine design:
+
+- **Automated pit shell generation** — Generate optimal pit shells from block model
+  economics using Lerchs-Grossmann or floating cone algorithms
+- **Pushback design** — AI-assisted creation of mining phases (pushbacks) that
+  balance strip ratio and NPV over the life of mine
+- **Dump design optimization** — Optimal waste dump placement considering haulage
+  distance, capacity, environmental constraints, and end-of-mine rehabilitation
+- **Road network design** — Automatic haul road layout optimizing gradient, distance,
+  and traffic flow
+- **Ramp design** — AI-generated ramp alignments meeting bench height and gradient constraints
+
+### 📋 Planned Enhancements
+
+| Feature | Category | Status |
+|---------|----------|--------|
+| Pit optimization (Lerchs-Grossmann) | Scheduling | Planned |
+| Multi-objective evolutionary scheduling | Scheduling | Planned |
+| Machine learning grade prediction | Quality | Planned |
+| Real-time GPS integration (MQTT/NTRIP) | Fleet | Planned |
+| Autonomous truck dispatch API | Fleet | Planned |
+| Mobile companion app (React Native) | Frontend | Planned |
+| Internationalization (i18n) | Frontend | Planned |
+| Plugin/extension system | Architecture | Planned |
+| Alembic migration management | Backend | Planned |
+| End-to-end Playwright tests | Testing | Planned |
+| Terraform/Helm deployment charts | Infrastructure | Planned |
+| SSO / OAuth2 integration | Security | Planned |
+| Audit log analytics | Security | Planned |
+| Survey import (LAS, DTM) | Data | Planned |
+| Video flythrough generation | 3D | Planned |
+| AR/VR integration | 3D | Experimental |
+
+### 🔬 Research Areas
+
+- **Digital twin** — Real-time mine digital twin with sensor integration
+- **Stochastic scheduling** — Schedule optimization under geological uncertainty
+- **Reinforcement learning** — RL-based adaptive fleet dispatch
+- **Computer vision** — Automated fragmentation analysis from blast photographs
+- **LiDAR integration** — Drone survey point cloud processing for stockpile measurement
 
 ---
 
-<div align="center">
+## Changelog
 
-**MineOpt Pro** - Optimizing Mine Production, One Shift at a Time
+### v1.0.0 — February 2026
 
-Built with ❤️ for the mining industry
+**Initial release** with 60+ backend services, 40 API routers, and 41 frontend component directories.
 
-</div>
+#### Highlights
+
+- ✅ CP-SAT and LP scheduling engine with multi-horizon planning
+- ✅ Quality management with Monte Carlo simulation and washability analysis
+- ✅ 3D terrain viewer with block models, surface timelines, and CAD editing
+- ✅ Fleet management with GPS tracking, geofencing, and haul cycle analysis
+- ✅ Drill & blast planning with fragmentation modeling
+- ✅ Environmental monitoring across dust, noise, water, and rehabilitation
+- ✅ Report pack generation with email delivery and CSV export
+- ✅ Real-time collaboration with WebSocket presence and edit locking
+- ✅ JWT authentication with role-based access control
+- ✅ Docker Compose deployment with health checks
+- ✅ Comprehensive demo data seeing for evaluation
+- ✅ Dark/light theme system
+
+#### Statistics
+
+- **40** API routers
+- **60+** backend services
+- **21** domain model files
+- **41** frontend component directories
+- **10** page-level components
+- **~25,000** lines of backend Python
+- **~20,000** lines of frontend React/JSX
+
+---
+
+## License
+
+MineOpt Pro is released under the **MIT License**.
+
+```
+MIT License
+
+Copyright (c) 2026 Sihle Mtshali
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+**Built with ❤️ for the mining industry by [Sihle Mtshali](https://github.com/SIHLE-MTSHALI)**
+
+If you find MineOpt Pro useful, please ⭐ star the repository on GitHub!
+---
+
+## Appendix A: API Usage Examples
+
+### Creating a Mine Site via API
+
+```bash
+# Step 1: Register and login
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123", "email": "admin@mine.com"}'
+
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123" | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# Step 2: Create a site
+curl -X POST http://localhost:8000/config/sites \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Kalahari Mine", "location": "Northern Cape", "crs_epsg": 32735}'
+
+# Step 3: Create a calendar
+curl -X POST http://localhost:8000/calendar/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"site_id": "SITE_ID", "name": "2026 Calendar", "year": 2026}'
+
+# Step 4: Create periods (monthly)
+for MONTH in 01 02 03 04 05 06 07 08 09 10 11 12; do
+  curl -X POST http://localhost:8000/calendar/periods \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"calendar_id": "CAL_ID", "name": "Month '$MONTH'", "type": "monthly"}'
+done
+```
+
+### Running the Optimizer via API
+
+```bash
+# Create a schedule version
+SCHEDULE=$(curl -s -X POST http://localhost:8000/schedule/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"site_id": "SITE_ID", "name": "Q1 2026 Plan", "schedule_type": "Authoritative"}')
+
+VERSION_ID=$(echo $SCHEDULE | python -c "import sys,json; print(json.load(sys.stdin)['version_id'])")
+
+# Run the CP-SAT optimizer
+curl -X POST http://localhost:8000/optimization/run \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"schedule_version_id": "'$VERSION_ID'", "solver": "cpsat", "max_time_seconds": 120}'
+
+# Check optimization status (poll until complete)
+curl http://localhost:8000/optimization/status/RUN_ID \
+  -H "Authorization: Bearer $TOKEN"
+# Response: {"status": "running", "progress": 45, "message": "Solving..."}
+# Response: {"status": "completed", "objective_value": 12345.67}
+```
+
+### Fetching Fleet Data via API
+
+```bash
+# List all equipment for a site
+curl http://localhost:8000/fleet/equipment/site/SITE_ID \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get latest GPS positions for all equipment
+curl http://localhost:8000/fleet/gps/latest/SITE_ID \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get haul cycles for a date range
+curl "http://localhost:8000/fleet/haul-cycles/SITE_ID?start=2026-01-01&end=2026-01-31" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get equipment maintenance status
+curl http://localhost:8000/fleet/maintenance/EQUIPMENT_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Generating Reports via API
+
+```bash
+# Generate a daily production report
+curl -X POST http://localhost:8000/reporting/daily \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"site_id": "SITE_ID", "date": "2026-01-15"}'
+
+# Generate a management report pack
+curl -X POST http://localhost:8000/reports/pack \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"site_id": "SITE_ID", "report_type": "monthly", "period": "2026-01"}'
+
+# Export schedule tasks to CSV
+curl http://localhost:8000/export/csv/tasks/SITE_ID \
+  -H "Authorization: Bearer $TOKEN" \
+  -o tasks_export.csv
+
+# Export quality data to CSV
+curl http://localhost:8000/export/csv/quality/SITE_ID \
+  -H "Authorization: Bearer $TOKEN" \
+  -o quality_export.csv
+```
+
+---
+
+## Appendix B: Mining Glossary
+
+For readers unfamiliar with mining terminology, here is a glossary of key terms
+used throughout MineOpt Pro:
+
+| Term | Definition |
+|------|-----------|
+| **Bench** | A horizontal step or ledge in the pit wall created during mining operations |
+| **Blast Pattern** | The geometric arrangement of drill holes for a planned explosive detonation |
+| **Block Model** | A 3D grid representation of an orebody with geological attributes per block |
+| **Borehole** | A narrow shaft drilled into the ground to collect geological core samples |
+| **Burden** | The distance from a row of blast holes to the free face or previous row of holes |
+| **Calorific Value (CV)** | Energy content of coal, measured in MJ/kg or kcal/kg |
+| **Collar** | The surface location (X, Y, Z) where a borehole enters the ground |
+| **CP-SAT** | Constraint Programming with Satisfiability — a solver from Google OR-Tools |
+| **CRS** | Coordinate Reference System — defines how map coordinates relate to the real world |
+| **Cut and Fill** | Earthworks calculation comparing material removed (cut) vs material added (fill) |
+| **DXF** | Drawing Exchange Format — a standard CAD file interchange format |
+| **Face** | The active area of rock or ore being mined at a bench |
+| **Factor of Safety (FoS)** | Ratio of resisting to driving forces in a slope stability analysis |
+| **Float-Sink** | A laboratory test that separates coal/ore by density to determine washability |
+| **Fragmentation** | The size distribution of rock pieces after blasting |
+| **Gantt Chart** | A timeline bar chart showing scheduled activities plotted against time |
+| **Geofence** | A virtual geographic boundary defined in software for location-based alerts |
+| **GeoTIFF** | A raster image format with embedded geographic coordinate information |
+| **Grade** | The concentration of a valuable mineral in ore (e.g., % Fe, g/t Au) |
+| **Haul Cycle** | One complete truck trip: loading → hauling → dumping → returning empty |
+| **Horizon** | A planning time span (e.g., life-of-mine, 5-year, annual, monthly, weekly) |
+| **In-situ** | Material in its original position in the ground before mining |
+| **Kriging** | A geostatistical interpolation method for estimating values between sample points |
+| **Kuz-Ram** | An empirical model for predicting blast fragmentation size distribution |
+| **Lithology** | The physical characteristics and composition of a rock type |
+| **LP** | Linear Programming — an optimization technique for problems with continuous variables |
+| **MTBF** | Mean Time Between Failures — average operating time before equipment breaks down |
+| **Open-Cast** | Surface mining where overburden is stripped to expose and extract the orebody |
+| **Ore** | Rock or earth containing enough minerals to be economically extracted |
+| **Overburden** | Non-valuable material lying above the ore that must be removed before mining |
+| **Pareto Front** | The set of optimal solutions where improving one objective worsens another |
+| **Pit Shell** | The optimal final pit boundary determined by economic analysis |
+| **Powder Factor** | The amount of explosive used per unit volume of rock (kg/m³) |
+| **Precedence** | A constraint requiring one mining block to be extracted before another can begin |
+| **Pushback** | A phase of mining that extends the pit in a planned direction |
+| **Reconciliation** | Systematic comparison of planned vs actual production, quality, and costs |
+| **ROM** | Run-of-Mine — raw material as extracted from the pit before any processing |
+| **Seam** | A layer of economically valuable mineral (especially coal) within geological strata |
+| **Spacing** | The distance between adjacent drill holes within a single blast pattern row |
+| **Stemming** | Inert material (crusite, drill cuttings) placed above explosives in a blast hole |
+| **Stockpile** | A temporary storage area for mined material awaiting processing or transport |
+| **Strip Ratio** | Ratio of waste to ore tonnage (e.g., 3:1 = 3 tonnes waste per 1 tonne ore) |
+| **Swell Factor** | The increase in volume when rock is broken from its in-situ state |
+| **TIN** | Triangulated Irregular Network — a 3D surface model constructed from triangles |
+| **Variogram** | A function describing the spatial correlation of a geological variable |
+| **Washability** | The separation characteristics of coal/ore when processed at different densities |
+| **Waste** | Non-valuable material that must be mined and placed in a waste dump |
+| **WebGL** | Web Graphics Library — a JavaScript API for rendering 3D graphics in the browser |
+| **Yield** | The percentage of ROM material recovered as saleable product after processing |
+
+---
+
+## Appendix C: Keyboard Shortcuts
+
+### CAD String Editor
+
+| Shortcut | Action |
+|----------|--------|
+| `Click` | Select nearest vertex |
+| `Click + Drag` | Move selected vertex to new position |
+| `Click on segment` | Insert new vertex at click point |
+| `Delete` / `Backspace` | Delete selected vertex |
+| `Escape` | Cancel current operation / deselect |
+| `Ctrl+Z` | Undo last edit |
+| `Ctrl+Y` / `Ctrl+Shift+Z` | Redo last undo |
+| `Ctrl+S` | Save all changes |
+| `S` | Split string at selected vertex |
+| `R` | Reverse vertex order |
+| `C` | Toggle close/open string |
+
+### 3D Viewer Controls
+
+| Control | Action |
+|---------|--------|
+| `Left Mouse + Drag` | Orbit (rotate) camera around target |
+| `Right Mouse + Drag` | Pan camera laterally |
+| `Middle Mouse + Drag` | Pan camera (alternative) |
+| `Scroll Wheel Up` | Zoom in |
+| `Scroll Wheel Down` | Zoom out |
+| `Double-Click` | Focus on clicked point |
+| `F` | Fit all geometry in view |
+| `T` | Top-down (plan) view |
+| `Numpad 1` | Front view |
+| `Numpad 3` | Right side view |
+| `Numpad 7` | Top view |
+| `Numpad 5` | Toggle perspective/orthographic |
+
+### Dashboard Navigation
+
+| Shortcut | Action |
+|----------|--------|
+| `Alt+D` | Go to Site Dashboard |
+| `Alt+P` | Go to Planner Workspace |
+| `Alt+O` | Go to Operations Dashboard |
+| `Alt+F` | Go to Fleet Dashboard |
+| `Alt+B` | Go to Drill & Blast Dashboard |
+| `Alt+M` | Go to Monitoring Dashboard |
+| `Escape` | Close any open modal or sidebar panel |
