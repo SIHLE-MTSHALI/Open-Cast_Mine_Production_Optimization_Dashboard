@@ -24,6 +24,36 @@ import { API_BASE_URL } from '../../services/api';
 
 const API_BASE = API_BASE_URL;
 
+// Activity-based color palette for task bars (#23 enhancement)
+const ACTIVITY_COLORS = {
+    drilling: { from: '#059669', to: '#10b981', label: 'Drilling' },
+    blasting: { from: '#ea580c', to: '#f97316', label: 'Blasting' },
+    mining: { from: '#2563eb', to: '#3b82f6', label: 'Mining' },
+    hauling: { from: '#7c3aed', to: '#8b5cf6', label: 'Hauling' },
+    loading: { from: '#0891b2', to: '#06b6d4', label: 'Loading' },
+    dumping: { from: '#65a30d', to: '#84cc16', label: 'Dumping' },
+    default: { from: '#475569', to: '#64748b', label: 'Other' },
+};
+
+function getActivityColor(activityName) {
+    const key = (activityName || '').toLowerCase();
+    for (const [k, v] of Object.entries(ACTIVITY_COLORS)) {
+        if (key.includes(k)) return v;
+    }
+    return ACTIVITY_COLORS.default;
+}
+
+// Group resources by resource_type for hierarchy display
+function groupResourcesByType(resources) {
+    const groups = {};
+    for (const r of resources) {
+        const type = r.resource_type || 'Other';
+        if (!groups[type]) groups[type] = [];
+        groups[type].push(r);
+    }
+    return Object.entries(groups);
+}
+
 const GanttChart = ({ siteId, resources = [], scheduleVersionId, periods = [], onTaskUpdate }) => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -44,14 +74,21 @@ const GanttChart = ({ siteId, resources = [], scheduleVersionId, periods = [], o
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, task: null });
 
     const gridRef = useRef(null);
+    // Precedence violations (#23 enhancement)
+    const [precedenceViolations, setPrecedenceViolations] = useState([]);
+    const [collapsedGroups, setCollapsedGroups] = useState({});
 
-    // Fetch tasks when schedule version changes
     useEffect(() => {
         if (scheduleVersionId) {
             fetchTasks();
             fetchMaintenanceWindows();
         }
     }, [scheduleVersionId]);
+
+    // Fetch precedence violations when site changes
+    useEffect(() => {
+        if (siteId) fetchPrecedenceViolations();
+    }, [siteId, scheduleVersionId]);
 
     // Filter visible periods based on view mode
     const visiblePeriods = React.useMemo(() => {
@@ -128,6 +165,19 @@ const GanttChart = ({ siteId, resources = [], scheduleVersionId, periods = [], o
         }
     };
 
+    /**
+     * Fetch precedence violations for constraint overlay
+     */
+    const fetchPrecedenceViolations = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/precedence/validate/site/${siteId}`);
+            if (res.data?.violations) {
+                setPrecedenceViolations(res.data.violations);
+            }
+        } catch {
+            setPrecedenceViolations([]);
+        }
+    };
     /**
      * Handle drag start for task
      */
@@ -555,17 +605,29 @@ const GanttChart = ({ siteId, resources = [], scheduleVersionId, periods = [], o
                 <span className="mr-4">
                     <strong className="text-slate-300">{totalTonnes.toLocaleString()}</strong>t total
                 </span>
-                <span className="flex items-center">
-                    <span className="w-3 h-3 bg-blue-600 rounded-sm mr-1"></span>
-                    Coal
-                    <span className="w-3 h-3 bg-slate-600 rounded-sm mr-1 ml-3"></span>
-                    Waste
-                    <span className="w-3 h-3 bg-amber-600 rounded-sm mr-1 ml-3"></span>
-                    At Risk
-                    <span className="w-3 h-3 bg-purple-600 rounded-sm mr-1 ml-3" style={{
-                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
-                    }}></span>
-                    Delay
+                <span className="flex items-center flex-wrap gap-x-3">
+                    {Object.entries(ACTIVITY_COLORS).filter(([k]) => k !== 'default').map(([k, v]) => (
+                        <span key={k} className="flex items-center">
+                            <span className="w-3 h-3 rounded-sm mr-1" style={{ background: `linear-gradient(135deg, ${v.from}, ${v.to})` }}></span>
+                            {v.label}
+                        </span>
+                    ))}
+                    <span className="flex items-center">
+                        <span className="w-3 h-3 bg-amber-600 rounded-sm mr-1"></span>
+                        At Risk
+                    </span>
+                    <span className="flex items-center">
+                        <span className="w-3 h-3 bg-purple-600 rounded-sm mr-1" style={{
+                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
+                        }}></span>
+                        Delay
+                    </span>
+                    {precedenceViolations.length > 0 && (
+                        <span className="flex items-center text-red-400">
+                            <span className="w-3 h-3 rounded-sm mr-1 border-2 border-red-500"></span>
+                            Violation ({precedenceViolations.length})
+                        </span>
+                    )}
                 </span>
             </div>
 
@@ -590,106 +652,133 @@ const GanttChart = ({ siteId, resources = [], scheduleVersionId, periods = [], o
                         ))}
                     </div>
 
-                    {/* Resource Rows */}
-                    {resources.map(res => (
-                        <div
-                            key={res.resource_id}
-                            className="flex border-b border-slate-800 hover:bg-slate-800/20 transition-colors"
-                            style={{ height: rowHeight }}
-                        >
-                            {/* Resource Name (sticky) */}
-                            <div className="w-48 min-w-48 p-3 border-r border-slate-800 flex items-center text-sm font-medium text-slate-300 sticky left-0 bg-slate-900 z-10">
-                                <div>
-                                    {res.name}
-                                    <span className="block text-xs text-slate-500">{res.resource_type}</span>
+                    {/* Resource Rows — grouped by type (#23 enhancement) */}
+                    {groupResourcesByType(resources).map(([groupName, groupResources]) => (
+                        <React.Fragment key={groupName}>
+                            {/* Group header */}
+                            <div
+                                className="flex border-b border-slate-700 bg-slate-800/60 cursor-pointer hover:bg-slate-800"
+                                style={{ height: 32 }}
+                                onClick={() => setCollapsedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }))}
+                            >
+                                <div className="w-48 min-w-48 px-3 py-1 border-r border-slate-700 flex items-center text-xs font-bold text-slate-400 uppercase tracking-wider sticky left-0 bg-slate-800/60 z-10">
+                                    <span style={{ marginRight: 6, fontSize: 10 }}>{collapsedGroups[groupName] ? '▶' : '▼'}</span>
+                                    {groupName} ({groupResources.length})
                                 </div>
+                                {visiblePeriods.map(p => (
+                                    <div key={p.period_id} style={{ width: periodWidth, minWidth: periodWidth }} className="border-r border-slate-700" />
+                                ))}
                             </div>
 
-                            {/* Time Slots */}
-                            {visiblePeriods.map((p) => {
-                                const cellTasks = getTasksForCell(res.resource_id, p.period_id);
-                                const isDragOver = dragOverCell?.resourceId === res.resource_id &&
-                                    dragOverCell?.periodId === p.period_id;
-
-                                // Check for maintenance
-                                const hasMaintenance = maintenanceWindows.some(
-                                    mw => mw.resource_id === res.resource_id && mw.period_id === p.period_id
-                                );
-
-                                return (
-                                    <div
-                                        key={p.period_id}
-                                        className={clsx(
-                                            "border-r border-slate-800 relative p-1 transition-colors",
-                                            isDragOver && "bg-blue-500/20 ring-2 ring-blue-500 ring-inset",
-                                            !p.is_working_period && "bg-slate-800/50",
-                                            hasMaintenance && "bg-red-500/10"
-                                        )}
-                                        style={{ width: periodWidth, minWidth: periodWidth }}
-                                        onDragOver={(e) => handleDragOver(e, res.resource_id, p.period_id)}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={(e) => handleDrop(e, res.resource_id, p.period_id)}
-                                    >
-                                        {/* Maintenance overlay indicator */}
-                                        {hasMaintenance && (
-                                            <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
-                                        )}
-
-                                        {/* Tasks in this cell */}
-                                        <div className="flex flex-col gap-1 h-full">
-                                            {cellTasks.map(task => (
-                                                <div
-                                                    key={task.id}
-                                                    draggable={task.taskType !== 'OptimiserDelay'}
-                                                    onDragStart={(e) => handleDragStart(e, task.id)}
-                                                    onDragEnd={handleDragEnd}
-                                                    onClick={() => setSelectedTaskId(task.id)}
-                                                    onContextMenu={(e) => handleContextMenu(e, task)}
-                                                    className={clsx(
-                                                        "flex-1 min-h-6 rounded text-xs flex items-center justify-center px-2",
-                                                        "font-medium text-white shadow transition-all",
-                                                        task.taskType !== 'OptimiserDelay' && "cursor-grab active:cursor-grabbing hover:brightness-110",
-                                                        task.taskType === 'OptimiserDelay' && "cursor-default",
-                                                        task.materialType === 'Coal' && !task.qualityRisk && task.taskType !== 'OptimiserDelay' && "bg-gradient-to-r from-blue-600 to-blue-500",
-                                                        task.materialType === 'Coal' && task.qualityRisk && task.taskType !== 'OptimiserDelay' && "bg-gradient-to-r from-amber-600 to-amber-500",
-                                                        task.materialType === 'Waste' && task.taskType !== 'OptimiserDelay' && "bg-gradient-to-r from-slate-600 to-slate-500",
-                                                        task.taskType === 'OptimiserDelay' && "bg-purple-600",
-                                                        selectedTaskId === task.id && "ring-2 ring-white ring-offset-1 ring-offset-slate-900"
-                                                    )}
-                                                    style={task.taskType === 'OptimiserDelay' ? {
-                                                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)'
-                                                    } : undefined}
-                                                    title={task.taskType === 'OptimiserDelay'
-                                                        ? `Optimizer Delay: ${task.notes || 'Rate reduction applied'}`
-                                                        : `${task.activityName}: ${task.tonnes.toLocaleString()}t${task.rateFactor !== 1 ? ` (${(task.rateFactor * 100).toFixed(0)}%)` : ''}`
-                                                    }
-                                                >
-                                                    {task.taskType === 'OptimiserDelay' ? (
-                                                        <span className="truncate text-purple-200 italic">
-                                                            ⚡ Delay
-                                                        </span>
-                                                    ) : (
-                                                        <>
-                                                            <span className="truncate">
-                                                                {task.tonnes >= 1000
-                                                                    ? `${(task.tonnes / 1000).toFixed(1)}kt`
-                                                                    : `${task.tonnes.toFixed(0)}t`
-                                                                }
-                                                            </span>
-                                                            {task.rateFactor !== 1 && (
-                                                                <span className="ml-1 opacity-70">
-                                                                    {(task.rateFactor * 100).toFixed(0)}%
-                                                                </span>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </div>
-                                            ))}
+                            {/* Resources within group */}
+                            {!collapsedGroups[groupName] && groupResources.map(res => (
+                                <div
+                                    key={res.resource_id}
+                                    className="flex border-b border-slate-800 hover:bg-slate-800/20 transition-colors"
+                                    style={{ height: rowHeight }}
+                                >
+                                    {/* Resource Name (sticky) */}
+                                    <div className="w-48 min-w-48 p-3 border-r border-slate-800 flex items-center text-sm font-medium text-slate-300 sticky left-0 bg-slate-900 z-10">
+                                        <div>
+                                            {res.name}
+                                            <span className="block text-xs text-slate-500">{res.resource_type}</span>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
+
+                                    {/* Time Slots */}
+                                    {visiblePeriods.map((p) => {
+                                        const cellTasks = getTasksForCell(res.resource_id, p.period_id);
+                                        const isDragOver = dragOverCell?.resourceId === res.resource_id &&
+                                            dragOverCell?.periodId === p.period_id;
+
+                                        // Check for maintenance
+                                        const hasMaintenance = maintenanceWindows.some(
+                                            mw => mw.resource_id === res.resource_id && mw.period_id === p.period_id
+                                        );
+
+                                        return (
+                                            <div
+                                                key={p.period_id}
+                                                className={clsx(
+                                                    "border-r border-slate-800 relative p-1 transition-colors",
+                                                    isDragOver && "bg-blue-500/20 ring-2 ring-blue-500 ring-inset",
+                                                    !p.is_working_period && "bg-slate-800/50",
+                                                    hasMaintenance && "bg-red-500/10"
+                                                )}
+                                                style={{ width: periodWidth, minWidth: periodWidth }}
+                                                onDragOver={(e) => handleDragOver(e, res.resource_id, p.period_id)}
+                                                onDragLeave={handleDragLeave}
+                                                onDrop={(e) => handleDrop(e, res.resource_id, p.period_id)}
+                                            >
+                                                {/* Maintenance overlay indicator */}
+                                                {hasMaintenance && (
+                                                    <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
+                                                )}
+
+                                                {/* Tasks in this cell */}
+                                                <div className="flex flex-col gap-1 h-full">
+                                                    {cellTasks.map(task => {
+                                                        const actColor = getActivityColor(task.activityName);
+                                                        const hasViolation = precedenceViolations.some(
+                                                            v => v.predecessor_task_id === task.id || v.successor_task_id === task.id
+                                                        );
+                                                        return (
+                                                            <div
+                                                                key={task.id}
+                                                                draggable={task.taskType !== 'OptimiserDelay'}
+                                                                onDragStart={(e) => handleDragStart(e, task.id)}
+                                                                onDragEnd={handleDragEnd}
+                                                                onClick={() => setSelectedTaskId(task.id)}
+                                                                onContextMenu={(e) => handleContextMenu(e, task)}
+                                                                className={clsx(
+                                                                    "flex-1 min-h-6 rounded text-xs flex items-center justify-center px-2",
+                                                                    "font-medium text-white shadow transition-all",
+                                                                    task.taskType !== 'OptimiserDelay' && "cursor-grab active:cursor-grabbing hover:brightness-110",
+                                                                    task.taskType === 'OptimiserDelay' && "cursor-default bg-purple-600",
+                                                                    task.qualityRisk && task.taskType !== 'OptimiserDelay' && "ring-2 ring-amber-500/60",
+                                                                    hasViolation && "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900",
+                                                                    selectedTaskId === task.id && "ring-2 ring-white ring-offset-1 ring-offset-slate-900"
+                                                                )}
+                                                                style={task.taskType === 'OptimiserDelay' ? {
+                                                                    backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)'
+                                                                } : {
+                                                                    background: `linear-gradient(135deg, ${actColor.from}, ${actColor.to})`
+                                                                }}
+                                                                title={task.taskType === 'OptimiserDelay'
+                                                                    ? `Optimizer Delay: ${task.notes || 'Rate reduction applied'}`
+                                                                    : `${task.activityName}: ${task.tonnes.toLocaleString()}t${task.rateFactor !== 1 ? ` (${(task.rateFactor * 100).toFixed(0)}%)` : ''}${hasViolation ? ' ⚠ Precedence violation' : ''}`
+                                                                }
+                                                            >
+                                                                {task.taskType === 'OptimiserDelay' ? (
+                                                                    <span className="truncate text-purple-200 italic">
+                                                                        ⚡ Delay
+                                                                    </span>
+                                                                ) : (
+                                                                    <>
+                                                                        {hasViolation && <span style={{ marginRight: 3 }}>⚠</span>}
+                                                                        <span className="truncate">
+                                                                            {task.tonnes >= 1000
+                                                                                ? `${(task.tonnes / 1000).toFixed(1)}kt`
+                                                                                : `${task.tonnes.toFixed(0)}t`
+                                                                            }
+                                                                        </span>
+                                                                        {task.rateFactor !== 1 && (
+                                                                            <span className="ml-1 opacity-70">
+                                                                                {(task.rateFactor * 100).toFixed(0)}%
+                                                                            </span>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </React.Fragment>
                     ))}
 
                     {/* Empty state */}

@@ -15,11 +15,12 @@ Pipeline Stages:
 8. Finalize Results - Persist schedule output
 """
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Callable
 from sqlalchemy.orm import Session
 from dataclasses import dataclass
 from datetime import datetime
 import uuid
+import logging
 
 from ..domain.models_scheduling import ScheduleVersion, Task
 from ..domain.models_calendar import Calendar, Period
@@ -433,7 +434,7 @@ class ScheduleEngine:
     8. Finalize Results - Persist schedule output
     """
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, progress_callback: Optional[Callable] = None):
         self.db = db
         self.validator = InputValidator(db)
         self.candidate_builder = CandidateBuilder(db)
@@ -444,6 +445,8 @@ class ScheduleEngine:
         self.blending = blending_service
         self.quality_feedback = QualityFeedbackEvaluator(db, blending_service)
         self.stage_timings: List[StageTiming] = []
+        self._progress_callback = progress_callback
+        self._run_start: Optional[datetime] = None
     
     def _start_stage(self, stage_name: str) -> StageTiming:
         """Start timing a stage."""
@@ -454,6 +457,22 @@ class ScheduleEngine:
     def _get_timing_summary(self) -> Dict[str, float]:
         """Get summary of stage timings in milliseconds."""
         return {t.stage_name: t.duration_ms or 0 for t in self.stage_timings}
+
+    def _emit_progress(self, stage: str, pct: float, message: str = ""):
+        """Emit progress event via callback if configured."""
+        if self._progress_callback:
+            elapsed = 0.0
+            if self._run_start:
+                elapsed = (datetime.utcnow() - self._run_start).total_seconds()
+            try:
+                self._progress_callback({
+                    "stage": stage,
+                    "progress_pct": round(pct, 1),
+                    "message": message,
+                    "elapsed_seconds": round(elapsed, 2),
+                })
+            except Exception:
+                pass  # Don't let callback errors break the pipeline
     
     
     def run_fast_pass(self, config: ScheduleRunConfig) -> ScheduleRunResult:
