@@ -3,15 +3,30 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+.venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.egg-info/
+.eggs/
 .env
 
 # JavaScript/Node
 node_modules/
 dist/
 .DS_Store
+coverage/
 
 # IDEs
 .idea/
+.vscode/
 
 # Project Specific
 /data/
@@ -20,3 +35,4 @@ backend/mineopt_pro.db
 *.db
 
 README_part1.md
+docs/reports/2026-02-25-repo-assimilation-analysis.md
