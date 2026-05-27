@@ -27,7 +27,7 @@ Sample and seeded data are included so the existing features can be exercised wi
 - [Troubleshooting](#troubleshooting)
 - [Contribution Guide](#contribution-guide)
 - [Operational Notes](#operational-notes)
-- [License Status](#license-status)
+- [License](#license)
 
 ## What This Project Does
 
@@ -902,19 +902,6 @@ Before using it with live operational data, review:
 
 These notes are not meant to reduce the usefulness of the codebase. They are the checklist a serious user should expect for any mining operations platform.
 
-## License Status
+## License
 
-No standalone `LICENSE` file was found in the repository root during this review. Add a license file before distributing the project or accepting external contributions under a specific open-source license.
-
-## Existing Documentation
-
-Additional docs are available under `docs/`:
-
-- `docs/USER_GUIDE.md`
-- `docs/DEVELOPER_GUIDE.md`
-- `docs/API_DOCUMENTATION.md`
-- `docs/requirements.md`
-- `docs/reviews/`
-- `docs/plans/`
-
-Some older docs may not match the current code as closely as this README. When in doubt, verify behavior against the source code, tests, and generated FastAPI docs.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for the full license text.
